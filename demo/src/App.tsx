@@ -1,340 +1,350 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  SAMPLE_PARTS,
-  explain,
-  planDrawing,
-  recommendKinds,
-  toTurkish,
-  type DrawingKind,
-  type DrawingPlan,
-  type SamplePart,
+  PAPER_SIZES,
+  SAMPLE_SHEET_PARTS,
+  buildBendSteps,
+  type DrawingStep,
   type SheetFormat,
-} from './autogbt'
+  type SheetMetalPart,
+} from './bendSteps'
 import './App.css'
 
-const KIND_LABELS: { id: DrawingKind; label: string; blurb: string }[] = [
-  { id: 'bend', label: 'Büküm', blurb: 'Açı, yarıçap, flanş ve büküm sırası' },
-  { id: 'cut', label: 'Kesim', blurb: 'Açınım, kontur, delik ve büküm çizgileri' },
-  { id: 'machining', label: 'İşleme', blurb: 'Çoklu görünüş, tolerans ve yüzey' },
-]
+function isVerticalBend(part: SheetMetalPart, bendId: string): boolean {
+  if (part.id === 'bracket') return bendId === 'BL-01'
+  if (part.id === 'cover') return bendId === 'BL-03' || bendId === 'BL-04'
+  return false
+}
 
-function DrawingSheet({ plan, part }: { plan: DrawingPlan; part: SamplePart }) {
+function FlatPatternSvg({
+  part,
+  highlightId,
+  completedIds,
+}: {
+  part: SheetMetalPart
+  highlightId?: string
+  completedIds: string[]
+}) {
+  const pad = 18
+  const w = part.flat.widthMm
+  const h = part.flat.heightMm
+  const vb = `${-pad} ${-pad} ${w + pad * 2} ${h + pad * 2}`
+
   return (
-    <div className="sheet" data-kind={plan.kind} aria-label={plan.title}>
-      <div className="sheet-frame">
-        <header className="sheet-header">
-          <div>
-            <p className="sheet-kicker">AUTOGBT · {toTurkish(plan.kind).toUpperCase()}</p>
-            <h3>{plan.title}</h3>
-          </div>
-          <div className="sheet-meta">
-            <span>Ölçek {plan.scale}</span>
-            <span>Güven %{Math.round(plan.confidence * 100)}</span>
-          </div>
-        </header>
+    <svg viewBox={vb} className="tech-svg" role="img" aria-label="Açınım büküm haritası">
+      <rect x={0} y={0} width={w} height={h} className="flat-body" />
 
-        <div className="sheet-canvas">
-          {plan.views.map((view) => (
-            <article
-              key={view.name}
-              className={`view-block${view.iso ? ' is-iso' : ''}${view.flat ? ' is-flat' : ''}${view.section ? ' is-section' : ''}${view.detail ? ' is-detail' : ''}`}
-              style={{
-                left: `${view.x * 100}%`,
-                bottom: `${view.y * 100}%`,
-                width: `${view.w * 100}%`,
-                height: `${view.h * 100}%`,
-              }}
-            >
-              <span className="view-label">{view.name}</span>
-              <svg viewBox="0 0 120 80" className="view-svg" aria-hidden="true">
-                {view.flat ? (
-                  <>
-                    <rect x="18" y="22" width="84" height="42" className="contour" />
-                    <line x1="18" y1="42" x2="102" y2="42" className="bend-up" />
-                    <line x1="48" y1="22" x2="48" y2="64" className="bend-down" />
-                    {part.holes.slice(0, 4).map((h, i) => (
-                      <circle key={h.id} cx={30 + i * 18} cy={34} r={3.2} className="hole" />
-                    ))}
-                  </>
-                ) : view.iso ? (
-                  <>
-                    <path d="M30 55 L60 35 L90 55 L60 75 Z" className="iso-top" />
-                    <path d="M30 55 L30 40 L60 20 L60 35 Z" className="iso-side" />
-                    <path d="M90 55 L90 40 L60 20 L60 35 Z" className="iso-front" />
-                  </>
-                ) : view.section ? (
-                  <>
-                    <rect x="28" y="18" width="64" height="48" className="contour" />
-                    <path d="M28 30 H92 M28 54 H92" className="hatch" />
-                    <circle cx="48" cy="42" r="8" className="hole" />
-                    <circle cx="72" cy="42" r="5" className="hole" />
-                  </>
-                ) : (
-                  <>
-                    <rect x="24" y="20" width="72" height="44" className="contour" />
-                    <line x1="24" y1="42" x2="96" y2="42" className="centerline" />
-                    <circle cx="42" cy="34" r="4" className="hole" />
-                    <circle cx="78" cy="34" r="4" className="hole" />
-                    {plan.kind === 'bend' && (
-                      <path d="M24 64 L24 48 L96 48 L96 30" className="bend-profile" />
-                    )}
-                  </>
-                )}
-              </svg>
-              <p className="view-desc">{view.description}</p>
-            </article>
-          ))}
+      {part.holes.map((hole) => (
+        <g key={hole.id}>
+          <circle cx={hole.xMm} cy={hole.yMm} r={hole.diameterMm / 2} className="flat-hole" />
+          <text x={hole.xMm + hole.diameterMm * 0.8} y={hole.yMm - 2} className="svg-label">
+            {hole.spec}
+          </text>
+        </g>
+      ))}
+
+      {part.bends.map((bend) => {
+        const active = bend.id === highlightId
+        const done = completedIds.includes(bend.id)
+        const cls = active ? 'bend-line active' : done ? 'bend-line done' : 'bend-line'
+        const vertical = isVerticalBend(part, bend.id)
+
+        if (vertical) {
+          const x = bend.xMm || bend.flangeMm
+          return (
+            <g key={bend.id}>
+              <line x1={x} y1={0} x2={x} y2={h} className={cls} />
+              <polygon
+                points={`${x},${10} ${x - 5},${20} ${x + 5},${20}`}
+                className={bend.direction === 'UP' ? 'bend-arrow up' : 'bend-arrow down'}
+              />
+              <text x={x + 3} y={16} className={active ? 'svg-label hot' : 'svg-label'}>
+                {bend.id} · {bend.angleDeg}° · {bend.direction}
+              </text>
+            </g>
+          )
+        }
+
+        const y = bend.yMm || bend.flangeMm
+        return (
+          <g key={bend.id}>
+            <line x1={0} y1={y} x2={w} y2={y} className={cls} />
+            <polygon
+              points={`${12},${y} ${22},${y - 5} ${22},${y + 5}`}
+              className={bend.direction === 'UP' ? 'bend-arrow up' : 'bend-arrow down'}
+            />
+            <text x={24} y={y - 3} className={active ? 'svg-label hot' : 'svg-label'}>
+              {bend.id} · {bend.angleDeg}° · {bend.direction}
+            </text>
+          </g>
+        )
+      })}
+
+      <line x1={0} y1={h + 8} x2={w} y2={h + 8} className="dim-line" />
+      <text x={w / 2 - 16} y={h + 16} className="svg-dim">
+        {w} mm
+      </text>
+      <line x1={w + 8} y1={0} x2={w + 8} y2={h} className="dim-line" />
+      <text x={w + 10} y={h / 2} className="svg-dim">
+        {h} mm
+      </text>
+    </svg>
+  )
+}
+
+function BendDetailSvg({ step, thickness }: { step: DrawingStep; thickness: number }) {
+  const b = step.bend
+  if (!b) return null
+
+  return (
+    <svg viewBox="0 0 280 168" className="tech-svg detail-svg" role="img" aria-label="Büküm detay profili">
+      <text x="12" y="18" className="svg-label">
+        Büküm detayı · {b.id}
+      </text>
+
+      {b.angleDeg === 90 ? (
+        <>
+          <path d="M 48 132 H 150 V 52" className="bend-profile-path" fill="none" />
+          <path d="M 48 124 H 142 V 52" className="bend-profile-inner" fill="none" />
+          <circle cx="150" cy="132" r="3.5" className="bend-point" />
+          <text x="158" y="130" className="svg-label hot">
+            Büküm noktası
+          </text>
+          <path d="M 172 132 A 24 24 0 0 0 150 108" className="angle-arc" fill="none" />
+          <text x="176" y="118" className="svg-label hot">
+            {b.angleDeg}°
+          </text>
+          <text x="70" y="148" className="svg-dim">
+            taban
+          </text>
+          <text x="118" y="46" className="svg-dim">
+            flanş {b.flangeMm} mm
+          </text>
+          <text x="112" y="124" className="svg-dim">
+            R{b.radiusMm}
+          </text>
+          <text x="48" y="112" className="svg-dim">
+            t={thickness} mm
+          </text>
+        </>
+      ) : (
+        <>
+          <circle cx="140" cy="90" r="3.5" className="bend-point" />
+          <text x="150" y="94" className="svg-label hot">
+            {b.id} · {b.angleDeg}° · R{b.radiusMm}
+          </text>
+        </>
+      )}
+
+      <text x="12" y="162" className="svg-dim">
+        Ne kadar: {b.angleDeg}° {b.direction === 'UP' ? 'yukarı' : 'aşağı'} · BA {b.allowanceMm.toFixed(2)} mm · {b.direction}
+      </text>
+    </svg>
+  )
+}
+
+function FinalFormSvg({ part }: { part: SheetMetalPart }) {
+  return (
+    <svg viewBox="0 0 240 160" className="tech-svg" role="img" aria-label="Nihai form">
+      <path d="M40 110 L110 70 L180 110 L110 150 Z" className="iso-face" />
+      <path d="M40 110 L40 85 L110 45 L110 70 Z" className="iso-face side" />
+      <path d="M180 110 L180 85 L110 45 L110 70 Z" className="iso-face front" />
+      {part.bends.map((b, i) => (
+        <text key={b.id} x={16} y={22 + i * 14} className="svg-label">
+          {b.id}: {b.angleDeg}° / R{b.radiusMm} / flanş {b.flangeMm} / {b.direction}
+        </text>
+      ))}
+      <text x="16" y="150" className="svg-dim">
+        Nihai bükülmüş form — açı ve flanş kontrolü
+      </text>
+    </svg>
+  )
+}
+
+function TechPaper({
+  part,
+  step,
+  paperLabel,
+  stepLabel,
+}: {
+  part: SheetMetalPart
+  step: DrawingStep
+  paperLabel: string
+  stepLabel: string
+}) {
+  return (
+    <article className="paper" aria-label={step.title}>
+      <header className="paper-head">
+        <div>
+          <p className="paper-kicker">AUTOGBT · TEKNİK RESİM KAĞIDI · {stepLabel}</p>
+          <h3>{step.title}</h3>
+          <p className="paper-sub">{step.subtitle}</p>
         </div>
+        <div className="paper-meta">
+          <span>{paperLabel}</span>
+          <span>Ölçek {step.scaleLabel}</span>
+          <span>Otomatik</span>
+        </div>
+      </header>
 
-        <footer className="sheet-footer">
-          <div className="title-block">
-            {plan.titleBlock.map((line) => (
-              <span key={line}>{line}</span>
-            ))}
+      <div className="paper-body">
+        {step.kind === 'overview' && <FlatPatternSvg part={part} completedIds={[]} />}
+        {step.kind === 'bend' && (
+          <div className="paper-split">
+            <FlatPatternSvg
+              part={part}
+              highlightId={step.bend?.id}
+              completedIds={step.completedBendIds}
+            />
+            <BendDetailSvg step={step} thickness={part.thicknessMm} />
           </div>
-          <div className="ann-strip">
-            {plan.annotations.slice(0, 3).map((a) => (
-              <p key={a.text}>
-                <strong>{a.kind}</strong> {a.text}
-              </p>
-            ))}
-          </div>
-        </footer>
+        )}
+        {step.kind === 'final' && <FinalFormSvg part={part} />}
       </div>
-    </div>
+
+      <div className="callout-row">
+        {step.callouts.map((c) => (
+          <div key={c.label} className="callout">
+            <span>{c.label}</span>
+            <strong>{c.value}</strong>
+          </div>
+        ))}
+      </div>
+
+      <ol className="step-instructions">
+        {step.instructions.map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+      </ol>
+
+      <footer className="paper-foot">
+        <span>Parça: {part.name}</span>
+        <span>Malzeme: {part.material}</span>
+        <span>Kalınlık: {part.thicknessMm} mm</span>
+        <span>Çizen: AutoGBT</span>
+        <span>{new Date().toLocaleDateString('tr-TR')}</span>
+      </footer>
+    </article>
   )
 }
 
 export default function App() {
-  const [partId, setPartId] = useState(SAMPLE_PARTS[0].id)
-  const [kind, setKind] = useState<DrawingKind>('cut')
+  const [partId, setPartId] = useState(SAMPLE_SHEET_PARTS[0].id)
   const [sheet, setSheet] = useState<SheetFormat>('a3')
-  const [extra, setExtra] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [plan, setPlan] = useState<DrawingPlan | null>(null)
-  const [report, setReport] = useState('')
-  const [revealed, setRevealed] = useState(false)
+  const [stepIndex, setStepIndex] = useState(0)
+  const [anim, setAnim] = useState(true)
 
   const part = useMemo(
-    () => SAMPLE_PARTS.find((p) => p.id === partId) as SamplePart,
+    () => SAMPLE_SHEET_PARTS.find((p) => p.id === partId) as SheetMetalPart,
     [partId],
   )
-
-  const suggested = recommendKinds(part)
+  const paper = PAPER_SIZES.find((p) => p.id === sheet) ?? PAPER_SIZES[0]
+  const steps = useMemo(() => buildBendSteps(part, paper), [part, paper])
+  const step = steps[Math.min(stepIndex, steps.length - 1)]
 
   useEffect(() => {
-    if (!suggested.includes(kind)) setKind(suggested[0])
-  }, [partId]) // eslint-disable-line react-hooks/exhaustive-deps
+    setStepIndex(0)
+  }, [partId, sheet])
 
-  async function runAutoGbt(nextKind: DrawingKind = kind) {
-    setBusy(true)
-    setRevealed(false)
-    await new Promise((r) => setTimeout(r, 650))
-    const next = planDrawing(part, nextKind, sheet, extra)
-    setPlan(next)
-    setReport(explain(part, next))
-    setKind(nextKind)
-    setBusy(false)
-    requestAnimationFrame(() => setRevealed(true))
+  useEffect(() => {
+    setAnim(false)
+    const id = window.setTimeout(() => setAnim(true), 30)
+    return () => window.clearTimeout(id)
+  }, [stepIndex, partId])
+
+  function go(delta: number) {
+    setStepIndex((i) => Math.max(0, Math.min(steps.length - 1, i + delta)))
   }
 
-  useEffect(() => {
-    void runAutoGbt('cut')
-    // İlk yüklemede örnek plan
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
   return (
-    <div className="page">
-      <header className="hero">
+    <div className="page steps-page">
+      <header className="hero compact-hero">
         <nav className="nav">
           <span className="brand-mark" aria-hidden="true" />
           <span className="nav-brand">AutoGBT</span>
-          <span className="nav-side">SolidWorks Eklentisi</span>
+          <span className="nav-side">Adım adım teknik resim</span>
         </nav>
-
         <div className="hero-copy">
-          <p className="eyebrow">Teknik resim asistanı</p>
-          <h1 className="brand-hero">AutoGBT</h1>
+          <p className="eyebrow">Büküm üretim sırası</p>
+          <h1 className="brand-hero tight">AutoGBT</h1>
           <p className="lede">
-            Katı modellerinizden büküm, kesim ve işleme teknik resimlerini
-            detaylı görünüşler, tablolar ve üretim notlarıyla otomatik üretir.
+            Otomatik ölçek, büküm noktaları ve her bükümün kaç derece olması
+            gerektiği — teknik resim kağıdında adım adım.
           </p>
-          <div className="cta-row">
-            <a className="btn primary" href="#studio">
-              Stüdyoyu dene
-            </a>
-            <a className="btn ghost" href="#install">
-              SolidWorks kurulumu
-            </a>
-          </div>
-        </div>
-
-        <div className="hero-visual" aria-hidden="true">
-          <div className="hero-grid" />
-          <div className="hero-plate">
-            <span>BÜKÜM</span>
-            <span>KESİM</span>
-            <span>İŞLEME</span>
-          </div>
         </div>
       </header>
 
-      <main>
-        <section id="studio" className="studio">
-          <div className="studio-head">
-            <h2>AutoGBT stüdyosu</h2>
-            <p>Örnek bir parçayı seçin; AutoGBT teknik resim planını oluştursun.</p>
-          </div>
+      <main className="wizard">
+        <aside className="wizard-side">
+          <label>
+            Sac parça
+            <select value={partId} onChange={(e) => setPartId(e.target.value)}>
+              {SAMPLE_SHEET_PARTS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="side-desc">{part.description}</p>
 
-          <div className="studio-layout">
-            <aside className="controls">
-              <label>
-                Örnek parça
-                <select value={partId} onChange={(e) => setPartId(e.target.value)}>
-                  {SAMPLE_PARTS.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+          <label>
+            Teknik resim kağıdı
+            <select value={sheet} onChange={(e) => setSheet(e.target.value as SheetFormat)}>
+              {PAPER_SIZES.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label} ({p.widthMm}×{p.heightMm} mm)
+                </option>
+              ))}
+            </select>
+          </label>
 
-              <div className="part-card-lite">
-                <p>{part.description}</p>
-                <ul>
-                  <li>Malzeme: {part.material}</li>
-                  <li>Sac: {part.isSheetMetal ? `Evet · ${part.thicknessMm} mm` : 'Hayır'}</li>
-                  <li>
-                    Büküm {part.bendCount} · Delik {part.holeCount} · Özellik {part.featureCount}
-                  </li>
-                  <li>
-                    Kutu {part.box.x}×{part.box.y}×{part.box.z} mm
-                  </li>
-                </ul>
-                <p className="suggest">
-                  Öneri:{' '}
-                  {suggested.map((k) => toTurkish(k)).join(' · ')}
-                </p>
-              </div>
-
-              <div className="kind-grid" role="tablist" aria-label="Resim türü">
-                {KIND_LABELS.map((k) => (
-                  <button
-                    key={k.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={kind === k.id}
-                    className={kind === k.id ? 'kind active' : 'kind'}
-                    onClick={() => void runAutoGbt(k.id)}
-                  >
-                    <strong>{k.label}</strong>
-                    <span>{k.blurb}</span>
-                  </button>
-                ))}
-              </div>
-
-              <label>
-                Sayfa formatı
-                <select
-                  value={sheet}
-                  onChange={(e) => setSheet(e.target.value as SheetFormat)}
-                >
-                  <option value="a3">A3 Yatay</option>
-                  <option value="a4-land">A4 Yatay</option>
-                  <option value="a4-port">A4 Dikey</option>
-                  <option value="a2">A2 Yatay</option>
-                </select>
-              </label>
-
-              <label>
-                Ek talimat
-                <textarea
-                  rows={3}
-                  placeholder="Örn. Kritik deliklere ±0.05 konum toleransı ekle"
-                  value={extra}
-                  onChange={(e) => setExtra(e.target.value)}
-                />
-              </label>
-
+          <div className="step-rail">
+            {steps.map((s, i) => (
               <button
+                key={s.id}
                 type="button"
-                className="btn primary wide"
-                disabled={busy}
-                onClick={() => void runAutoGbt(kind)}
+                className={`step-chip${i === stepIndex ? ' active' : ''}${i < stepIndex ? ' done' : ''}`}
+                onClick={() => setStepIndex(i)}
               >
-                {busy ? 'AutoGBT planlıyor…' : 'Teknik resmi oluştur'}
+                <span className="step-num">{i + 1}</span>
+                <span>
+                  <strong>
+                    {s.kind === 'bend' ? s.bend?.id : s.kind === 'overview' ? 'Harita' : 'Final'}
+                  </strong>
+                  <small>
+                    {s.kind === 'bend'
+                      ? `${s.bend?.angleDeg}° · ${s.bend?.direction}`
+                      : s.scaleLabel}
+                  </small>
+                </span>
               </button>
-            </aside>
-
-            <div className={`preview${revealed ? ' revealed' : ''}${busy ? ' busy' : ''}`}>
-              {plan ? <DrawingSheet plan={plan} part={part} /> : null}
-              {busy && <div className="busy-veil">AutoGBT modelı okuyor…</div>}
-            </div>
+            ))}
           </div>
 
-          {report && (
-            <pre className="report" aria-live="polite">
-              {report}
-            </pre>
-          )}
-        </section>
-
-        <section className="features">
-          <h2>Eklentide ne var?</h2>
-          <div className="feature-row">
-            <article>
-              <h3>AutoGBT motoru</h3>
-              <p>
-                Parçayı analiz eder; sac metal, büküm, delik ve kutu bilgisinden
-                optimal görünüş yerleşimini ve notları üretir.
-              </p>
-            </article>
-            <article>
-              <h3>Üç resim türü</h3>
-              <p>
-                Büküm tablolu büküm resmi, flat pattern kesim resmi ve toleranslı
-                işleme resmi — tek tıkla SolidWorks çizimine aktarılır.
-              </p>
-            </article>
-            <article>
-              <h3>Görev paneli</h3>
-              <p>
-                SolidWorks içinde AutoGBT paneli: analiz, önizleme, sayfa formatı
-                ve üretim seçenekleri.
-              </p>
-            </article>
+          <div className="wizard-nav">
+            <button type="button" className="btn ghost" disabled={stepIndex === 0} onClick={() => go(-1)}>
+              Önceki
+            </button>
+            <button
+              type="button"
+              className="btn primary"
+              disabled={stepIndex >= steps.length - 1}
+              onClick={() => go(1)}
+            >
+              Sonraki adım
+            </button>
           </div>
-        </section>
+        </aside>
 
-        <section id="install" className="install">
-          <h2>SolidWorks’e kurulum</h2>
-          <ol>
-            <li>Windows’ta Visual Studio 2022 + SolidWorks API redistributable kurun.</li>
-            <li>
-              <code>AutoGBT.sln</code> çözümünü <strong>Release | x64</strong> olarak derleyin.
-            </li>
-            <li>
-              Yönetici olarak <code>scripts/install-addin.bat</code> çalıştırın.
-            </li>
-            <li>
-              SolidWorks → Tools → Add-ins → <em>AutoGBT Teknik Resim</em> etkinleştirin.
-            </li>
-            <li>
-              Bir parçayı kaydedin; komut çubuğundan Büküm / Kesim / İşleme seçin.
-            </li>
-          </ol>
-          <p className="note">
-            Bu sayfa, eklentinin AutoGBT planlayıcısını tarayıcıda gösterir.
-            Gerçek .SLDDRW üretimi SolidWorks API üzerinden Windows’ta çalışır.
-          </p>
+        <section className={`wizard-stage${anim ? ' show' : ''}`}>
+          <TechPaper
+            part={part}
+            step={step}
+            paperLabel={paper.label}
+            stepLabel={`${stepIndex + 1} / ${steps.length}`}
+          />
         </section>
       </main>
-
-      <footer className="site-footer">
-        <span>AutoGBT</span>
-        <span>Büküm · Kesim · İşleme</span>
-      </footer>
     </div>
   )
 }
