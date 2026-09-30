@@ -37,9 +37,13 @@ scripts/install-addin.bat
 ## Gereksinimler (Windows)
 
 - Windows 10/11 x64
-- [.NET Framework 4.8](https://dotnet.microsoft.com/download/dotnet-framework/net48)
-- Visual Studio 2022 (Desktop development with .NET)
-- SolidWorks 2020+ (yalnızca eklenti / `.SLDDRW` için)
+- **Derleyici (birini kurun):**
+  - [Visual Studio 2022 Community](https://visualstudio.microsoft.com/tr/downloads/) — workload: **.NET desktop development**
+  - veya [Build Tools for Visual Studio 2022](https://visualstudio.microsoft.com/tr/downloads/#build-tools-for-visual-studio-2022) — aynı workload
+- [.NET Framework 4.8 Developer Pack](https://dotnet.microsoft.com/download/dotnet-framework/net48) (VS ile genelde gelir)
+- SolidWorks 2020+ (yalnızca eklenti / `.SLDDRW` için; masaüstü uygulama SolidWorks’siz de açılır)
+
+`scripts\build-windows.bat` MSBuild’i otomatik bulur; Developer Command Prompt şart değildir.
 
 ## Tek adım kurulum (Windows)
 
