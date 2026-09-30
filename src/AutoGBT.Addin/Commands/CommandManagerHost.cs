@@ -66,6 +66,12 @@ namespace AutoGBT.Addin
                 4, nameof(SwAddin.OnOpenTaskPane), "", 4,
                 (int)swCommandItemType_e.swMenuItem | (int)swCommandItemType_e.swToolbarItem);
 
+            _group.AddCommandItem2("Montaj Tüm Resimler", -1,
+                "Montajdaki tüm parçalar için teknik resimleri üret",
+                "Montaj Batch",
+                5, nameof(SwAddin.OnCreateAllAssemblyDrawings), nameof(SwAddin.OnEnable), 5,
+                (int)swCommandItemType_e.swMenuItem | (int)swCommandItemType_e.swToolbarItem);
+
             _group.HasToolbar = true;
             _group.HasMenu = true;
             _group.Activate();

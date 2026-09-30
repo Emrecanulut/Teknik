@@ -1,246 +1,143 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
-  PAPER_SIZES,
-  SAMPLE_SHEET_PARTS,
-  buildBendSteps,
-  type DrawingStep,
-  type SheetFormat,
-  type SheetMetalPart,
-} from './bendSteps'
+  analyzeUploads,
+  jobsForPart,
+  processLabel,
+  roleLabel,
+  type AssemblyProject,
+  type DetectedPart,
+  type DrawingJob,
+  type ProcessKind,
+} from './assemblyEngine'
+import type { DrawingStep, SheetMetalPart } from './bendSteps'
 import './App.css'
 
-function isVerticalBend(part: SheetMetalPart, bendId: string): boolean {
-  if (part.id === 'bracket') return bendId === 'BL-01'
-  if (part.id === 'cover') return bendId === 'BL-03' || bendId === 'BL-04'
-  return false
+type Phase = 'landing' | 'processing' | 'studio'
+
+function ProcessBadge({ process }: { process: ProcessKind }) {
+  return <span className={`proc-badge proc-${process}`}>{processLabel(process)}</span>
 }
 
-function FlatPatternSvg({
-  part,
-  highlightId,
-  completedIds,
-}: {
-  part: SheetMetalPart
-  highlightId?: string
-  completedIds: string[]
-}) {
-  const pad = 18
-  const w = part.flat.widthMm
-  const h = part.flat.heightMm
-  const vb = `${-pad} ${-pad} ${w + pad * 2} ${h + pad * 2}`
-
+function FlatMini({ sheet, highlightId }: { sheet: SheetMetalPart; highlightId?: string }) {
+  const w = sheet.flat.widthMm
+  const h = sheet.flat.heightMm
+  const pad = 12
   return (
-    <svg viewBox={vb} className="tech-svg" role="img" aria-label="Açınım büküm haritası">
+    <svg viewBox={`${-pad} ${-pad} ${w + pad * 2} ${h + pad * 2}`} className="tech-svg mini">
       <rect x={0} y={0} width={w} height={h} className="flat-body" />
-
-      {part.holes.map((hole) => (
-        <g key={hole.id}>
-          <circle cx={hole.xMm} cy={hole.yMm} r={hole.diameterMm / 2} className="flat-hole" />
-          <text x={hole.xMm + hole.diameterMm * 0.8} y={hole.yMm - 2} className="svg-label">
-            {hole.spec}
-          </text>
-        </g>
-      ))}
-
-      {part.bends.map((bend) => {
-        const active = bend.id === highlightId
-        const done = completedIds.includes(bend.id)
-        const cls = active ? 'bend-line active' : done ? 'bend-line done' : 'bend-line'
-        const vertical = isVerticalBend(part, bend.id)
-
+      {sheet.bends.map((b, i) => {
+        const vertical = i % 2 === 0
+        const active = b.id === highlightId
+        const cls = active ? 'bend-line active' : 'bend-line'
         if (vertical) {
-          const x = bend.xMm || bend.flangeMm
-          return (
-            <g key={bend.id}>
-              <line x1={x} y1={0} x2={x} y2={h} className={cls} />
-              <polygon
-                points={`${x},${10} ${x - 5},${20} ${x + 5},${20}`}
-                className={bend.direction === 'UP' ? 'bend-arrow up' : 'bend-arrow down'}
-              />
-              <text x={x + 3} y={16} className={active ? 'svg-label hot' : 'svg-label'}>
-                {bend.id} · {bend.angleDeg}° · {bend.direction}
-              </text>
-            </g>
-          )
+          const x = b.xMm || b.flangeMm
+          return <line key={b.id} x1={x} y1={0} x2={x} y2={h} className={cls} />
         }
-
-        const y = bend.yMm || bend.flangeMm
-        return (
-          <g key={bend.id}>
-            <line x1={0} y1={y} x2={w} y2={y} className={cls} />
-            <polygon
-              points={`${12},${y} ${22},${y - 5} ${22},${y + 5}`}
-              className={bend.direction === 'UP' ? 'bend-arrow up' : 'bend-arrow down'}
-            />
-            <text x={24} y={y - 3} className={active ? 'svg-label hot' : 'svg-label'}>
-              {bend.id} · {bend.angleDeg}° · {bend.direction}
-            </text>
-          </g>
-        )
+        const y = b.yMm || b.flangeMm
+        return <line key={b.id} x1={0} y1={y} x2={w} y2={y} className={cls} />
       })}
-
-      <line x1={0} y1={h + 8} x2={w} y2={h + 8} className="dim-line" />
-      <text x={w / 2 - 16} y={h + 16} className="svg-dim">
-        {w} mm
-      </text>
-      <line x1={w + 8} y1={0} x2={w + 8} y2={h} className="dim-line" />
-      <text x={w + 10} y={h / 2} className="svg-dim">
-        {h} mm
-      </text>
-    </svg>
-  )
-}
-
-function BendDetailSvg({ step, thickness }: { step: DrawingStep; thickness: number }) {
-  const b = step.bend
-  if (!b) return null
-
-  return (
-    <svg viewBox="0 0 280 168" className="tech-svg detail-svg" role="img" aria-label="Büküm detay profili">
-      <text x="12" y="18" className="svg-label">
-        Büküm detayı · {b.id}
-      </text>
-
-      {b.angleDeg === 90 ? (
-        <>
-          <path d="M 48 132 H 150 V 52" className="bend-profile-path" fill="none" />
-          <path d="M 48 124 H 142 V 52" className="bend-profile-inner" fill="none" />
-          <circle cx="150" cy="132" r="3.5" className="bend-point" />
-          <text x="158" y="130" className="svg-label hot">
-            Büküm noktası
-          </text>
-          <path d="M 172 132 A 24 24 0 0 0 150 108" className="angle-arc" fill="none" />
-          <text x="176" y="118" className="svg-label hot">
-            {b.angleDeg}°
-          </text>
-          <text x="70" y="148" className="svg-dim">
-            taban
-          </text>
-          <text x="118" y="46" className="svg-dim">
-            flanş {b.flangeMm} mm
-          </text>
-          <text x="112" y="124" className="svg-dim">
-            R{b.radiusMm}
-          </text>
-          <text x="48" y="112" className="svg-dim">
-            t={thickness} mm
-          </text>
-        </>
-      ) : (
-        <>
-          <circle cx="140" cy="90" r="3.5" className="bend-point" />
-          <text x="150" y="94" className="svg-label hot">
-            {b.id} · {b.angleDeg}° · R{b.radiusMm}
-          </text>
-        </>
-      )}
-
-      <text x="12" y="162" className="svg-dim">
-        Ne kadar: {b.angleDeg}° {b.direction === 'UP' ? 'yukarı' : 'aşağı'} · BA {b.allowanceMm.toFixed(2)} mm · {b.direction}
-      </text>
-    </svg>
-  )
-}
-
-function FinalFormSvg({ part }: { part: SheetMetalPart }) {
-  return (
-    <svg viewBox="0 0 240 160" className="tech-svg" role="img" aria-label="Nihai form">
-      <path d="M40 110 L110 70 L180 110 L110 150 Z" className="iso-face" />
-      <path d="M40 110 L40 85 L110 45 L110 70 Z" className="iso-face side" />
-      <path d="M180 110 L180 85 L110 45 L110 70 Z" className="iso-face front" />
-      {part.bends.map((b, i) => (
-        <text key={b.id} x={16} y={22 + i * 14} className="svg-label">
-          {b.id}: {b.angleDeg}° / R{b.radiusMm} / flanş {b.flangeMm} / {b.direction}
-        </text>
+      {sheet.holes.map((hole) => (
+        <circle key={hole.id} cx={hole.xMm} cy={hole.yMm} r={hole.diameterMm / 2} className="flat-hole" />
       ))}
-      <text x="16" y="150" className="svg-dim">
-        Nihai bükülmüş form — açı ve flanş kontrolü
-      </text>
     </svg>
   )
 }
 
-function TechPaper({
+function JobPaper({
+  job,
   part,
-  step,
-  paperLabel,
-  stepLabel,
+  bendStep,
 }: {
-  part: SheetMetalPart
-  step: DrawingStep
-  paperLabel: string
-  stepLabel: string
+  job: DrawingJob
+  part: DetectedPart
+  bendStep?: DrawingStep
 }) {
   return (
-    <article className="paper" id="tech-paper" aria-label={step.title}>
+    <article className="paper job-paper" aria-label={job.title}>
       <header className="paper-head">
         <div>
-          <p className="paper-kicker">AUTOGBT · TEKNİK RESİM KAĞIDI · {stepLabel}</p>
-          <h3>{step.title}</h3>
-          <p className="paper-sub">{step.subtitle}</p>
+          <p className="paper-kicker">
+            AUTOGBT · {processLabel(job.process).toUpperCase()} · {part.fileName}
+          </p>
+          <h3>{bendStep ? bendStep.title : job.title}</h3>
+          <p className="paper-sub">{bendStep ? bendStep.subtitle : job.summary}</p>
         </div>
         <div className="paper-meta">
-          <span>{paperLabel}</span>
-          <span>Ölçek {step.scaleLabel}</span>
-          <span>Otomatik ölçeklendirme</span>
+          <span>Adet ×{part.quantity}</span>
+          <span>Ölçek {bendStep?.scaleLabel ?? job.scaleLabel}</span>
+          <span>Güven %{Math.round(part.confidence * 100)}</span>
         </div>
       </header>
 
-      {step.kind === 'bend' && step.bend && (
-        <div className="bend-amount" aria-live="polite">
+      {job.process === 'bend' && bendStep?.bend && (
+        <div className="bend-amount">
           <div>
-            <span className="bend-amount-label">Bu adımda ne kadar bükülecek</span>
+            <span className="bend-amount-label">Ne kadar bükülecek</span>
             <p className="bend-amount-value">
-              {step.bend.angleDeg}°
-              <small>{step.bend.direction === 'UP' ? 'yukarı' : 'aşağı'}</small>
+              {bendStep.bend.angleDeg}°
+              <small>{bendStep.bend.direction === 'UP' ? 'yukarı' : 'aşağı'}</small>
             </p>
           </div>
           <ul>
             <li>
-              Büküm noktası <strong>{step.bend.id}</strong>
+              Nokta <strong>{bendStep.bend.id}</strong>
             </li>
             <li>
-              Konum <strong>
-                {step.bend.xMm.toFixed(0)}, {step.bend.yMm.toFixed(0)} mm
-              </strong>
+              R <strong>{bendStep.bend.radiusMm}</strong>
             </li>
             <li>
-              İç yarıçap <strong>R{step.bend.radiusMm}</strong>
+              Flanş <strong>{bendStep.bend.flangeMm} mm</strong>
             </li>
             <li>
-              Flanş <strong>{step.bend.flangeMm} mm</strong>
-            </li>
-            <li>
-              Büküm payı <strong>{step.bend.allowanceMm.toFixed(2)} mm</strong>
+              BA <strong>{bendStep.bend.allowanceMm.toFixed(2)} mm</strong>
             </li>
           </ul>
         </div>
       )}
 
       <div className="paper-body">
-        {step.kind === 'overview' && <FlatPatternSvg part={part} completedIds={[]} />}
-        {step.kind === 'bend' && (
-          <div className="paper-split">
-            <div>
-              <p className="panel-caption">Açınımda büküm noktası</p>
-              <FlatPatternSvg
-                part={part}
-                highlightId={step.bend?.id}
-                completedIds={step.completedBendIds}
-              />
-            </div>
-            <div>
-              <p className="panel-caption">Profil detayı</p>
-              <BendDetailSvg step={step} thickness={part.thicknessMm} />
-            </div>
+        {part.sheet && (job.process === 'cut' || job.process === 'bend') && (
+          <FlatMini
+            sheet={part.sheet}
+            highlightId={bendStep?.bend?.id}
+          />
+        )}
+        {job.process === 'weld' && (
+          <div className="weld-map">
+            {part.welds.map((w) => (
+              <div key={w.id} className="weld-card">
+                <strong>{w.id}</strong>
+                <span>{w.joint}</span>
+                <span>
+                  {w.process} · L={w.lengthMm} · a={w.throatMm} · {w.sides} taraf
+                </span>
+                <em>{w.note}</em>
+              </div>
+            ))}
           </div>
         )}
-        {step.kind === 'final' && <FinalFormSvg part={part} />}
+        {job.process === 'machining' && (
+          <div className="machine-map">
+            <div className="iso-block" aria-hidden="true">
+              <span>Ön</span>
+              <span>Üst</span>
+              <span>Yan</span>
+              <span>İzo</span>
+            </div>
+            <ul>
+              {part.holes.map((h) => (
+                <li key={h.id}>
+                  {h.spec} × {h.count}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       <div className="callout-row">
-        {step.callouts.map((c) => (
-          <div key={c.label} className={`callout${c.label === 'Açı' ? ' emphasize' : ''}`}>
+        {(bendStep?.callouts ?? job.callouts).map((c) => (
+          <div key={c.label} className="callout">
             <span>{c.label}</span>
             <strong>{c.value}</strong>
           </div>
@@ -248,163 +145,351 @@ function TechPaper({
       </div>
 
       <ol className="step-instructions">
-        {step.instructions.map((line) => (
+        {(bendStep?.instructions ?? job.instructions).map((line) => (
           <li key={line}>{line}</li>
         ))}
       </ol>
 
       <footer className="paper-foot">
-        <span>Parça: {part.name}</span>
-        <span>Malzeme: {part.material}</span>
-        <span>Kalınlık: {part.thicknessMm} mm</span>
-        <span>Çizen: AutoGBT</span>
-        <span>{new Date().toLocaleDateString('tr-TR')}</span>
+        <span>{part.name}</span>
+        <span>{part.material}</span>
+        <span>{roleLabel(part.role)}</span>
+        <span>AutoGBT</span>
       </footer>
     </article>
   )
 }
 
 export default function App() {
-  const [partId, setPartId] = useState(SAMPLE_SHEET_PARTS[0].id)
-  const [sheet, setSheet] = useState<SheetFormat>('a3')
-  const [stepIndex, setStepIndex] = useState(0)
-  const [anim, setAnim] = useState(true)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [phase, setPhase] = useState<Phase>('landing')
+  const [project, setProject] = useState<AssemblyProject | null>(null)
+  const [status, setStatus] = useState('')
+  const [selectedPartId, setSelectedPartId] = useState<string>('')
+  const [selectedJobId, setSelectedJobId] = useState<string>('')
+  const [bendStepIndex, setBendStepIndex] = useState(0)
+  const [dragOver, setDragOver] = useState(false)
 
-  const part = useMemo(
-    () => SAMPLE_SHEET_PARTS.find((p) => p.id === partId) as SheetMetalPart,
-    [partId],
+  const selectedPart = useMemo(
+    () => project?.parts.find((p) => p.id === selectedPartId) ?? null,
+    [project, selectedPartId],
   )
-  const paper = PAPER_SIZES.find((p) => p.id === sheet) ?? PAPER_SIZES[0]
-  const steps = useMemo(() => buildBendSteps(part, paper), [part, paper])
-  const step = steps[Math.min(stepIndex, steps.length - 1)]
+  const partJobs = useMemo(
+    () => (project && selectedPartId ? jobsForPart(project, selectedPartId) : []),
+    [project, selectedPartId],
+  )
+  const selectedJob = useMemo(
+    () => partJobs.find((j) => j.id === selectedJobId) ?? partJobs[0] ?? null,
+    [partJobs, selectedJobId],
+  )
+  const bendSteps = selectedJob?.bendSteps
+  const bendStep = bendSteps?.[Math.min(bendStepIndex, (bendSteps?.length ?? 1) - 1)]
 
-  useEffect(() => {
-    setStepIndex(0)
-  }, [partId, sheet])
+  async function runAnalysis(files: File[]) {
+    if (!files.length) return
+    setPhase('processing')
+    setStatus('Dosyalar okunuyor…')
+    await wait(500)
+    setStatus('Montaj / parça ağacı ayırt ediliyor…')
+    await wait(700)
+    setStatus('Büküm · kesim · kaynak · işleme prosesleri sınıflandırılıyor…')
+    await wait(700)
+    setStatus('Teknik resim kağıtları planlanıyor…')
+    await wait(500)
 
-  useEffect(() => {
-    setAnim(false)
-    const id = window.setTimeout(() => setAnim(true), 30)
-    return () => window.clearTimeout(id)
-  }, [stepIndex, partId])
+    const proj = analyzeUploads(files)
+    setProject(proj)
+    const firstDrawable = proj.parts.find((p) => p.processes.length > 0) ?? proj.parts[0]
+    setSelectedPartId(firstDrawable.id)
+    const jobs = jobsForPart(proj, firstDrawable.id)
+    setSelectedJobId(jobs[0]?.id ?? '')
+    setBendStepIndex(0)
+    setPhase('studio')
+  }
 
-  function go(delta: number) {
-    setStepIndex((i) => Math.max(0, Math.min(steps.length - 1, i + delta)))
+  function openSample() {
+    void runAnalysis([
+      new File([new Uint8Array([0])], 'Ornek-Makina-Montaj.SLDASM', {
+        type: 'application/octet-stream',
+      }),
+    ])
+  }
+
+  function onFiles(list: FileList | File[] | null) {
+    if (!list) return
+    void runAnalysis([...list])
+  }
+
+  function selectPart(part: DetectedPart) {
+    setSelectedPartId(part.id)
+    const jobs = project ? jobsForPart(project, part.id) : []
+    setSelectedJobId(jobs[0]?.id ?? '')
+    setBendStepIndex(0)
+  }
+
+  function selectJob(job: DrawingJob) {
+    setSelectedJobId(job.id)
+    setBendStepIndex(0)
   }
 
   return (
-    <div className="page steps-page">
-      <header className="hero compact-hero">
-        <nav className="nav">
-          <span className="brand-mark" aria-hidden="true" />
-          <span className="nav-brand">AutoGBT</span>
-          <span className="nav-side">Adım adım teknik resim</span>
-        </nav>
-        <div className="hero-copy">
-          <p className="eyebrow">Büküm üretim sırası</p>
-          <h1 className="brand-hero tight">AutoGBT</h1>
-          <p className="lede">
-            Otomatik ölçek, büküm noktaları ve her bükümün kaç derece olması
-            gerektiği — teknik resim kağıdında adım adım.
-          </p>
-        </div>
-      </header>
-
-      <main className="wizard">
-        <aside className="wizard-side">
-          <label>
-            Sac parça
-            <select value={partId} onChange={(e) => setPartId(e.target.value)}>
-              {SAMPLE_SHEET_PARTS.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <p className="side-desc">{part.description}</p>
-
-          <label>
-            Teknik resim kağıdı
-            <select value={sheet} onChange={(e) => setSheet(e.target.value as SheetFormat)}>
-              {PAPER_SIZES.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.label} ({p.widthMm}×{p.heightMm} mm)
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <div className="progress-block">
-            <div className="progress-top">
-              <span>İlerleme</span>
-              <span>
-                {stepIndex + 1}/{steps.length}
-              </span>
-            </div>
-            <div className="progress-track" aria-hidden="true">
-              <div
-                className="progress-fill"
-                style={{ width: `${((stepIndex + 1) / steps.length) * 100}%` }}
-              />
-            </div>
+    <div className="page assembly-page">
+      {phase !== 'studio' && (
+        <header className="hero compact-hero">
+          <nav className="nav">
+            <span className="brand-mark" aria-hidden="true" />
+            <span className="nav-brand">AutoGBT</span>
+            <span className="nav-side">Montaj → Parça → Teknik Resim</span>
+          </nav>
+          <div className="hero-copy">
+            <p className="eyebrow">Profesyonel teknik resim hattı</p>
+            <h1 className="brand-hero tight">AutoGBT</h1>
+            <p className="lede">
+              SolidWorks montajınızı yükleyin. AutoGBT tüm farklı parçaları ayırt eder;
+              büküm, kesim, kaynak ve işleme teknik resimlerini ayrı ayrı üretir.
+            </p>
           </div>
+        </header>
+      )}
 
-          <div className="step-rail">
-            {steps.map((s, i) => (
-              <button
-                key={s.id}
-                type="button"
-                className={`step-chip${i === stepIndex ? ' active' : ''}${i < stepIndex ? ' done' : ''}`}
-                onClick={() => setStepIndex(i)}
-              >
-                <span className="step-num">{i + 1}</span>
-                <span>
-                  <strong>
-                    {s.kind === 'bend' ? s.bend?.id : s.kind === 'overview' ? 'Harita' : 'Final'}
-                  </strong>
-                  <small>
-                    {s.kind === 'bend'
-                      ? `${s.bend?.angleDeg}° · ${s.bend?.direction}`
-                      : `Ölçek ${s.scaleLabel}`}
-                  </small>
-                </span>
+      {phase === 'landing' && (
+        <section className="upload-section">
+          <div
+            className={`dropzone${dragOver ? ' over' : ''}`}
+            onDragEnter={(e) => {
+              e.preventDefault()
+              setDragOver(true)
+            }}
+            onDragOver={(e) => e.preventDefault()}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault()
+              setDragOver(false)
+              onFiles(e.dataTransfer.files)
+            }}
+          >
+            <p className="drop-title">SolidWorks dosyalarını sürükleyip bırakın</p>
+            <p className="drop-sub">.SLDASM montaj · .SLDPRT parçalar · birden fazla dosya</p>
+            <div className="drop-actions">
+              <button type="button" className="btn primary" onClick={() => inputRef.current?.click()}>
+                Dosya seç
               </button>
+              <button type="button" className="btn ghost" onClick={openSample}>
+                Örnek montajı aç
+              </button>
+            </div>
+            <input
+              ref={inputRef}
+              type="file"
+              multiple
+              accept=".sldasm,.sldprt,.SLDASM,.SLDPRT,.step,.stp"
+              hidden
+              onChange={(e) => onFiles(e.target.files)}
+            />
+          </div>
+          <ul className="upload-points">
+            <li>Montajdaki tüm parçalar tek tek listelenir</li>
+            <li>Sac / kaynak / CNC / bağlantı elemanı otomatik ayırt edilir</li>
+            <li>Her proses için ayrı teknik resim kağıdı üretilir</li>
+            <li>Bükümler adım adım (nokta, açı, pay) çıkarılır</li>
+          </ul>
+        </section>
+      )}
+
+      {phase === 'processing' && (
+        <section className="processing">
+          <div className="processing-card">
+            <div className="spinner" aria-hidden="true" />
+            <h2>AutoGBT analiz ediyor</h2>
+            <p>{status}</p>
+          </div>
+        </section>
+      )}
+
+      {phase === 'studio' && project && (
+        <main className="assembly-studio">
+          <header className="studio-bar">
+            <div>
+              <p className="eyebrow">Proje</p>
+              <h2>{project.name}</h2>
+              <p className="studio-meta">
+                {project.parts.length} parça · {project.jobs.length} teknik resim ·{' '}
+                {project.uploadedFiles.join(', ')}
+              </p>
+            </div>
+            <div className="studio-bar-actions">
+              <button type="button" className="btn ghost" onClick={() => window.print()}>
+                Yazdır
+              </button>
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={() => {
+                  setPhase('landing')
+                  setProject(null)
+                }}
+              >
+                Yeni yükleme
+              </button>
+            </div>
+          </header>
+
+          <div className="studio-notes">
+            {project.notes.map((n) => (
+              <span key={n}>{n}</span>
             ))}
           </div>
 
-          <div className="wizard-nav">
-            <button type="button" className="btn ghost" disabled={stepIndex === 0} onClick={() => go(-1)}>
-              Önceki
-            </button>
-            <button
-              type="button"
-              className="btn primary"
-              disabled={stepIndex >= steps.length - 1}
-              onClick={() => go(1)}
-            >
-              Sonraki kağıt
-            </button>
+          <div className="studio-grid">
+            <aside className="parts-pane">
+              <h3>Ayırt edilen parçalar</h3>
+              <div className="parts-list">
+                {project.parts.map((part) => (
+                  <button
+                    key={part.id}
+                    type="button"
+                    className={`part-row${part.id === selectedPartId ? ' active' : ''}${part.processes.length === 0 ? ' skipped' : ''}`}
+                    onClick={() => selectPart(part)}
+                  >
+                    <div className="part-row-top">
+                      <strong>{part.name}</strong>
+                      <span>×{part.quantity}</span>
+                    </div>
+                    <div className="part-row-mid">
+                      <em>{roleLabel(part.role)}</em>
+                      <span>%{Math.round(part.confidence * 100)}</span>
+                    </div>
+                    <div className="part-row-badges">
+                      {part.processes.length === 0 ? (
+                        <span className="proc-badge proc-skip">Resim yok</span>
+                      ) : (
+                        part.processes.map((p) => <ProcessBadge key={p} process={p} />)
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </aside>
+
+            <section className="jobs-pane">
+              {selectedPart && (
+                <>
+                  <div className="job-head">
+                    <div>
+                      <h3>{selectedPart.name}</h3>
+                      <p>{selectedPart.description}</p>
+                    </div>
+                    <div className="job-tabs">
+                      {partJobs.length === 0 && <span className="muted">Bu parça için teknik resim üretilmez.</span>}
+                      {partJobs.map((job) => (
+                        <button
+                          key={job.id}
+                          type="button"
+                          className={`job-tab${selectedJob?.id === job.id ? ' active' : ''}`}
+                          onClick={() => selectJob(job)}
+                        >
+                          {processLabel(job.process)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {selectedJob && (
+                    <>
+                      {selectedJob.bendSteps && selectedJob.bendSteps.length > 0 && (
+                        <div className="bend-stepper">
+                          <button
+                            type="button"
+                            className="btn ghost"
+                            disabled={bendStepIndex === 0}
+                            onClick={() => setBendStepIndex((i) => Math.max(0, i - 1))}
+                          >
+                            Önceki adım
+                          </button>
+                          <div className="bend-step-rail">
+                            {selectedJob.bendSteps.map((s, i) => (
+                              <button
+                                key={s.id}
+                                type="button"
+                                className={`step-dot${i === bendStepIndex ? ' active' : ''}`}
+                                onClick={() => setBendStepIndex(i)}
+                              >
+                                {i + 1}
+                              </button>
+                            ))}
+                          </div>
+                          <button
+                            type="button"
+                            className="btn ghost"
+                            disabled={bendStepIndex >= selectedJob.bendSteps.length - 1}
+                            onClick={() =>
+                              setBendStepIndex((i) =>
+                                Math.min((selectedJob.bendSteps?.length ?? 1) - 1, i + 1),
+                              )
+                            }
+                          >
+                            Sonraki adım
+                          </button>
+                        </div>
+                      )}
+
+                      <JobPaper job={selectedJob} part={selectedPart} bendStep={bendStep} />
+                    </>
+                  )}
+                </>
+              )}
+            </section>
+
+            <aside className="queue-pane">
+              <h3>Üretim kuyruğu</h3>
+              <p className="muted">{project.jobs.length} ayrı kağıt</p>
+              <ol className="queue-list">
+                {project.jobs.map((job) => (
+                  <li key={job.id}>
+                    <button
+                      type="button"
+                      className={job.id === selectedJob?.id ? 'active' : ''}
+                      onClick={() => {
+                        setSelectedPartId(job.partId)
+                        setSelectedJobId(job.id)
+                        setBendStepIndex(0)
+                      }}
+                    >
+                      <strong>{processLabel(job.process)}</strong>
+                      <span>{job.partName}</span>
+                    </button>
+                  </li>
+                ))}
+              </ol>
+              <button
+                type="button"
+                className="btn primary wide"
+                onClick={() => {
+                  // Jump through all drawable parts' first jobs sequentially feel
+                  if (!project.jobs.length) return
+                  const idx = Math.max(
+                    0,
+                    project.jobs.findIndex((j) => j.id === selectedJob?.id),
+                  )
+                  const next = project.jobs[(idx + 1) % project.jobs.length]
+                  setSelectedPartId(next.partId)
+                  setSelectedJobId(next.id)
+                  setBendStepIndex(0)
+                }}
+              >
+                Sonraki teknik resim
+              </button>
+              <button type="button" className="btn ghost wide" onClick={openSample}>
+                Örnek montajı yeniden yükle
+              </button>
+            </aside>
           </div>
-
-          <button
-            type="button"
-            className="btn ghost wide print-btn"
-            onClick={() => window.print()}
-          >
-            Bu kağıdı yazdır
-          </button>
-        </aside>
-
-        <section className={`wizard-stage${anim ? ' show' : ''}`}>
-          <TechPaper
-            part={part}
-            step={step}
-            paperLabel={paper.label}
-            stepLabel={`${stepIndex + 1} / ${steps.length}`}
-          />
-        </section>
-      </main>
+        </main>
+      )}
     </div>
   )
+}
+
+function wait(ms: number) {
+  return new Promise((r) => setTimeout(r, ms))
 }

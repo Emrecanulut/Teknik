@@ -99,6 +99,7 @@ namespace AutoGBT.SolidWorks.Drawings
                 DrawingKind.Bend => "_Buküm",
                 DrawingKind.Cut => "_Kesim",
                 DrawingKind.Machining => "_Isleme",
+                DrawingKind.Weld => "_Kaynak",
                 _ => "_AutoGBT"
             };
             return Path.Combine(dir, name + suffix + ".SLDDRW");

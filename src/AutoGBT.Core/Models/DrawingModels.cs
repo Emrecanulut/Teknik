@@ -1,13 +1,14 @@
 namespace AutoGBT.Core.Models
 {
     /// <summary>
-    /// Teknik resim türleri: büküm, kesim (açınım) ve işleme.
+    /// Teknik resim türleri: büküm, kesim, kaynak ve işleme.
     /// </summary>
     public enum DrawingKind
     {
         Bend = 0,       // Büküm
         Cut = 1,        // Kesim / Flat pattern
-        Machining = 2   // İşleme
+        Machining = 2,  // İşleme
+        Weld = 3        // Kaynak noktaları
     }
 
     public enum DrawingSheetFormat
@@ -25,9 +26,12 @@ namespace AutoGBT.Core.Models
         public string Material { get; set; } = "Belirtilmemiş";
         public double ThicknessMm { get; set; }
         public bool IsSheetMetal { get; set; }
+        public bool IsWeldment { get; set; }
         public int BendCount { get; set; }
         public int HoleCount { get; set; }
         public int FeatureCount { get; set; }
+        public int Quantity { get; set; } = 1;
+        public string ComponentPath { get; set; } = string.Empty;
         public BoundingBoxMm BoundingBox { get; set; } = new BoundingBoxMm();
         public System.Collections.Generic.List<BendInfo> Bends { get; set; }
             = new System.Collections.Generic.List<BendInfo>();

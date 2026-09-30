@@ -192,7 +192,7 @@ namespace AutoGBT.UI
                 ForeColor = Ink,
                 FlatStyle = FlatStyle.Flat
             };
-            _kindBox.Items.AddRange(new object[] { "Büküm", "Kesim / Açınım", "İşleme" });
+            _kindBox.Items.AddRange(new object[] { "Büküm", "Kesim / Açınım", "İşleme", "Kaynak" });
             _kindBox.SelectedIndex = 1;
             _kindBox.SelectedIndexChanged += (_, __) =>
             {
@@ -200,6 +200,7 @@ namespace AutoGBT.UI
                 {
                     0 => DrawingKind.Bend,
                     2 => DrawingKind.Machining,
+                    3 => DrawingKind.Weld,
                     _ => DrawingKind.Cut
                 };
             };
@@ -247,9 +248,19 @@ namespace AutoGBT.UI
             cutBtn.Click += (_, __) => Create(DrawingKind.Cut);
             Add(bendBtn); Add(cutBtn); y += 40;
 
-            var machBtn = MakeButton("İşleme Resmi", 12, y, 300);
+            var machBtn = MakeButton("İşleme Resmi", 12, y, 145);
             machBtn.Click += (_, __) => Create(DrawingKind.Machining);
-            Add(machBtn); y += 42;
+            var weldBtn = MakeButton("Kaynak Resmi", 167, y, 145);
+            weldBtn.Click += (_, __) => Create(DrawingKind.Weld);
+            Add(machBtn); Add(weldBtn); y += 40;
+
+            if (_host.SupportsAssemblyBatch)
+            {
+                var batchBtn = MakeButton("Montajdaki TÜM parçalar", 12, y, 300);
+                batchBtn.BackColor = Color.FromArgb(200, 140, 40);
+                batchBtn.Click += (_, __) => RunAssemblyBatch();
+                Add(batchBtn); y += 42;
+            }
 
             _status = new Label
             {
@@ -305,6 +316,7 @@ namespace AutoGBT.UI
                 {
                     DrawingKind.Bend => 0,
                     DrawingKind.Machining => 2,
+                    DrawingKind.Weld => 3,
                     _ => 1
                 };
                 PreviewSelected();
@@ -341,6 +353,7 @@ namespace AutoGBT.UI
                 {
                     DrawingKind.Bend => 0,
                     DrawingKind.Machining => 2,
+                    DrawingKind.Weld => 3,
                     _ => 1
                 };
 
@@ -373,6 +386,26 @@ namespace AutoGBT.UI
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Information);
                 }
+            }
+            catch (Exception ex)
+            {
+                Cursor = Cursors.Default;
+                _report.Text = ex.Message;
+                MessageBox.Show(this, ex.Message, "AutoGBT", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void RunAssemblyBatch()
+        {
+            try
+            {
+                Cursor = Cursors.WaitCursor;
+                var report = _host.RunAssemblyBatch(BuildRequest(_selectedKind));
+                Cursor = Cursors.Default;
+                _report.Text = report;
+                _status.Text = "Montaj toplu üretim tamamlandı.";
+                _status.ForeColor = Brass;
+                MessageBox.Show(this, report, "AutoGBT Montaj", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {

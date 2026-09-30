@@ -1145,3 +1145,392 @@ main {
     grid-template-columns: 1fr;
   }
 }
+
+/* —— Montaj stüdyosu —— */
+.upload-section {
+  padding: 0 clamp(1.25rem, 4vw, 3.5rem) 3rem;
+  display: grid;
+  gap: 1.25rem;
+  max-width: 920px;
+}
+
+.dropzone {
+  border: 1.5px dashed rgba(212, 160, 23, 0.55);
+  border-radius: 1.25rem;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  background:
+    radial-gradient(700px 240px at 50% 0%, rgba(212, 160, 23, 0.12), transparent 70%),
+    rgba(22, 30, 27, 0.9);
+  transition: border-color 180ms ease, background 180ms ease;
+}
+
+.dropzone.over {
+  border-color: var(--brass);
+  background: rgba(212, 160, 23, 0.1);
+}
+
+.drop-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+}
+
+.drop-sub {
+  margin: 0.5rem 0 1.25rem;
+  color: var(--ink-muted);
+}
+
+.drop-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.upload-points {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--ink-muted);
+  display: grid;
+  gap: 0.35rem;
+}
+
+.processing {
+  min-height: 40vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+}
+
+.processing-card {
+  text-align: center;
+  max-width: 420px;
+}
+
+.processing-card h2 {
+  font-family: var(--font-display);
+  margin: 1rem 0 0.4rem;
+}
+
+.spinner {
+  width: 42px;
+  height: 42px;
+  margin: 0 auto;
+  border-radius: 50%;
+  border: 3px solid rgba(232, 224, 208, 0.15);
+  border-top-color: var(--brass);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.assembly-studio {
+  padding: 1rem clamp(1.25rem, 4vw, 3.5rem) 3rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.studio-bar {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.studio-bar h2 {
+  margin: 0.15rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+}
+
+.studio-meta {
+  margin: 0.35rem 0 0;
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+}
+
+.studio-bar-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.studio-notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.studio-notes span {
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  border: 1px solid rgba(232, 224, 208, 0.12);
+  border-radius: 999px;
+  padding: 0.3rem 0.65rem;
+}
+
+.studio-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr 240px;
+  gap: 1rem;
+  align-items: start;
+}
+
+.parts-pane,
+.queue-pane,
+.jobs-pane {
+  background: rgba(22, 30, 27, 0.88);
+  border: 1px solid rgba(232, 224, 208, 0.08);
+  border-radius: 1rem;
+  padding: 0.9rem;
+}
+
+.parts-pane h3,
+.queue-pane h3,
+.job-head h3 {
+  margin: 0 0 0.65rem;
+  font-family: var(--font-display);
+}
+
+.parts-list {
+  display: grid;
+  gap: 0.45rem;
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.part-row {
+  text-align: left;
+  border: 1px solid rgba(232, 224, 208, 0.1);
+  background: transparent;
+  color: var(--ink);
+  border-radius: 0.75rem;
+  padding: 0.65rem 0.7rem;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.part-row.active {
+  border-color: rgba(212, 160, 23, 0.7);
+  background: rgba(212, 160, 23, 0.1);
+}
+
+.part-row.skipped {
+  opacity: 0.65;
+}
+
+.part-row-top,
+.part-row-mid {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.part-row-mid em {
+  font-style: normal;
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+}
+
+.part-row-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.proc-badge {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+  padding: 0.15rem 0.45rem;
+  border: 1px solid rgba(232, 224, 208, 0.2);
+}
+
+.proc-cut { color: #7eb6ff; border-color: rgba(126, 182, 255, 0.4); }
+.proc-bend { color: var(--brass); border-color: rgba(212, 160, 23, 0.45); }
+.proc-weld { color: #ff8b6a; border-color: rgba(255, 139, 106, 0.45); }
+.proc-machining { color: #8fd49a; border-color: rgba(143, 212, 154, 0.45); }
+.proc-skip { color: var(--ink-muted); }
+
+.job-head {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.job-head p {
+  margin: 0.25rem 0 0;
+  color: var(--ink-muted);
+}
+
+.job-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.job-tab {
+  border: 1px solid rgba(232, 224, 208, 0.14);
+  background: transparent;
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 0.4rem 0.8rem;
+  font-weight: 600;
+}
+
+.job-tab.active {
+  background: var(--brass);
+  color: #14110a;
+  border-color: var(--brass);
+}
+
+.bend-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.bend-step-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  flex: 1;
+  justify-content: center;
+}
+
+.step-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid rgba(232, 224, 208, 0.2);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-mono);
+}
+
+.step-dot.active {
+  background: var(--brass);
+  color: #14110a;
+  border-color: var(--brass);
+}
+
+.jobs-pane {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.tech-svg.mini {
+  min-height: 180px;
+}
+
+.weld-map {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.weld-card {
+  border: 1px dashed rgba(28, 34, 30, 0.4);
+  padding: 0.55rem 0.7rem;
+  display: grid;
+  gap: 0.15rem;
+  font-size: 0.88rem;
+}
+
+.weld-card em {
+  color: #5a5346;
+  font-style: normal;
+  font-size: 0.8rem;
+}
+
+.machine-map {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 0.75rem;
+}
+
+.iso-block {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+
+.iso-block span {
+  border: 1px dashed rgba(28, 34, 30, 0.4);
+  min-height: 70px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.queue-list {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+  max-height: 55vh;
+  overflow: auto;
+}
+
+.queue-list button {
+  width: 100%;
+  text-align: left;
+  border: 1px solid rgba(232, 224, 208, 0.1);
+  background: transparent;
+  color: var(--ink);
+  border-radius: 0.6rem;
+  padding: 0.5rem 0.6rem;
+  display: grid;
+  gap: 0.1rem;
+}
+
+.queue-list button.active {
+  border-color: rgba(212, 160, 23, 0.65);
+  background: rgba(212, 160, 23, 0.1);
+}
+
+.queue-list span {
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+}
+
+.muted {
+  color: var(--ink-muted);
+  font-size: 0.85rem;
+}
+
+.queue-pane .btn.wide {
+  width: 100%;
+  margin-top: 0.45rem;
+  border-radius: 0.65rem;
+}
+
+@media (max-width: 1100px) {
+  .studio-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  .studio-bar-actions,
+  .parts-pane,
+  .queue-pane,
+  .bend-stepper,
+  .job-tabs,
+  .studio-notes {
+    display: none !important;
+  }
+
+  .studio-grid {
+    display: block;
+  }
+}

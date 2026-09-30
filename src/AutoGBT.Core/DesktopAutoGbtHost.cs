@@ -22,6 +22,7 @@ namespace AutoGBT.Core
 
         public string HostName => "AutoGBT Windows";
         public bool CanCreateSolidWorksDrawing => false;
+        public bool SupportsAssemblyBatch => false;
 
         public ModelSummary CurrentModel => _current;
 
@@ -92,6 +93,11 @@ namespace AutoGBT.Core
                 Warnings = plan.QualityChecks.FindAll(c =>
                     c.StartsWith("Uyarı", StringComparison.OrdinalIgnoreCase))
             };
+        }
+
+        public string RunAssemblyBatch(DrawingRequest request)
+        {
+            return "Montaj toplu üretim yalnızca SolidWorks eklentisinde çalışır. Web stüdyosundan veya eklentiden montaj açın.";
         }
 
         public void NotifyUser(string message, bool isError = false)

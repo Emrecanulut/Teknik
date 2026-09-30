@@ -106,6 +106,15 @@ namespace AutoGBT.SolidWorks.Analysis
                         summary.IsSheetMetal = true;
                     }
 
+                    if (string.Equals(typeName, "Weldment", StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(typeName, "WeldBead", StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(typeName, "EndCap", StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(typeName, "Gusset", StringComparison.OrdinalIgnoreCase)
+                        || (typeName != null && typeName.IndexOf("Weld", StringComparison.OrdinalIgnoreCase) >= 0))
+                    {
+                        summary.IsWeldment = true;
+                    }
+
                     if (string.Equals(typeName, "Bend", StringComparison.OrdinalIgnoreCase)
                         || string.Equals(typeName, "OneBend", StringComparison.OrdinalIgnoreCase)
                         || string.Equals(typeName, "SketchBend", StringComparison.OrdinalIgnoreCase)

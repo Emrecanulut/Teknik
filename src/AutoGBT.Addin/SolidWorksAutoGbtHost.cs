@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using AutoGBT.Core;
 using AutoGBT.Core.Models;
 using AutoGBT.SolidWorks;
@@ -23,6 +24,7 @@ namespace AutoGBT.Addin
 
         public string HostName => "SolidWorks";
         public bool CanCreateSolidWorksDrawing => true;
+        public bool SupportsAssemblyBatch => true;
 
         public ModelSummary Analyze() => _service.Analyze();
 
@@ -34,6 +36,15 @@ namespace AutoGBT.Addin
 
         public DrawingResult CreateDrawing(DrawingKind kind, DrawingRequest request)
             => _service.Create(kind, request);
+
+        public string RunAssemblyBatch(DrawingRequest request)
+        {
+            var batch = _service.CreateAllComponentDrawings(request);
+            var detail = string.Join("\n", batch.Lines.Take(30));
+            if (batch.Warnings.Count > 0)
+                detail += "\n\nUyarılar:\n" + string.Join("\n", batch.Warnings.Take(15));
+            return batch.Message + "\n\n" + detail;
+        }
 
         public void NotifyUser(string message, bool isError = false)
         {

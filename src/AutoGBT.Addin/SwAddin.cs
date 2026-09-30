@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 using AutoGBT.Core.AI;
 using AutoGBT.Core.Models;
@@ -101,6 +102,22 @@ namespace AutoGBT.Addin
         public void OnOpenTaskPane()
         {
             RunSafe(() => _taskPane?.Show());
+        }
+
+        public void OnCreateAllAssemblyDrawings()
+        {
+            RunSafe(() =>
+            {
+                var batch = _service!.CreateAllComponentDrawings();
+                var msg = batch.Message;
+                if (batch.Lines.Count > 0)
+                    msg += "\n\n" + string.Join("\n", batch.Lines.Take(25));
+                if (batch.Warnings.Count > 0)
+                    msg += "\n\n" + string.Join("\n", batch.Warnings.Take(10));
+                _swApp!.SendMsgToUser2(msg,
+                    (int)swMessageBoxIcon_e.swMbInformation,
+                    (int)swMessageBoxBtn_e.swMbOk);
+            });
         }
 
         public void OnAnalyzeWithAutoGbt()

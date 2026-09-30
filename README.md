@@ -4,12 +4,22 @@ Windows üzerinde çalışan **WinForms** arayüzlü SolidWorks eklentisi.
 **AutoGBT** asistanı katı modellerinizden **büküm**, **kesim (açınım)** ve **işleme**
 teknik resimlerini planlar ve SolidWorks çizimine aktarır.
 
-## Windows’ta iki yüzey
+## Ne üretir?
+
+Montaj veya parçaları yükleyin / açın. AutoGBT:
+
+1. Tüm **farklı parçaları** ayırt eder (bağlantı elemanlarını eler)
+2. Her parçayı sınıflandırır: **sac / kaynak / CNC**
+3. Proses bazlı ayrı teknik resimler çıkarır: **Kesim · Büküm · Kaynak · İşleme**
+4. Bükümleri **adım adım** (nokta, açı, pay, ölçek) sunar
+
+## Kullanım yüzeyleri
 
 | Uygulama | Ne işe yarar |
 | --- | --- |
-| **AutoGBT.Desktop.exe** | Saf Windows WinForms arayüzü — SolidWorks olmadan plan/önizleme |
-| **AutoGBT.Addin** (SolidWorks) | Aynı WinForms paneli görev panelinde + gerçek `.SLDDRW` üretimi |
+| **Web stüdyo** (`demo/`) | Dosya yükle → parça listesi → ayrı teknik resim kağıtları |
+| **AutoGBT.Desktop.exe** | Windows WinForms önizleme |
+| **AutoGBT.Addin** | SolidWorks’te gerçek montaj tarama + `.SLDDRW` toplu üretim |
 
 ## Depo yapısı
 

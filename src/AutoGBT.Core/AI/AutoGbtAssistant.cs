@@ -27,6 +27,7 @@ namespace AutoGBT.Core.AI
             {
                 DrawingKind.Bend => PlanBendDrawing(model, request),
                 DrawingKind.Cut => PlanCutDrawing(model, request),
+                DrawingKind.Weld => PlanWeldDrawing(model, request),
                 DrawingKind.Machining => PlanMachiningDrawing(model, request),
                 _ => PlanMachiningDrawing(model, request)
             };
@@ -67,7 +68,15 @@ namespace AutoGBT.Core.AI
                 list.Add(DrawingKind.Cut);
                 if (model.BendCount > 0) list.Add(DrawingKind.Bend);
             }
-            list.Add(DrawingKind.Machining);
+            if (model.IsWeldment)
+            {
+                if (!list.Contains(DrawingKind.Cut)) list.Add(DrawingKind.Cut);
+                list.Add(DrawingKind.Weld);
+            }
+            if (!model.IsSheetMetal && !model.IsWeldment)
+                list.Add(DrawingKind.Machining);
+            else if (model.HoleCount > 0 && !model.IsSheetMetal)
+                list.Add(DrawingKind.Machining);
             return list;
         }
 
@@ -262,6 +271,67 @@ namespace AutoGBT.Core.AI
             }
 
             FillTitleBlock(plan, model, request, "KESİM");
+            return plan;
+        }
+
+        private DrawingPlan PlanWeldDrawing(ModelSummary model, DrawingRequest request)
+        {
+            var plan = new DrawingPlan
+            {
+                Kind = DrawingKind.Weld,
+                Title = string.IsNullOrWhiteSpace(request.Title)
+                    ? $"{model.PartName} — Kaynak Noktaları Resmi"
+                    : request.Title,
+                SheetFormat = request.SheetFormat,
+                RecommendedScale = RecommendScale(model, preferLarge: true),
+                Summary = "AutoGBT kaynak dikişleri / noktaları için görünüş ve kaynak tablosu planladı."
+            };
+
+            plan.Views.Add(new ViewPlan
+            {
+                Name = "İzometrik Kaynak",
+                Orientation = "Isometric",
+                IsIsometric = true,
+                RelativeX = 0.12,
+                RelativeY = 0.35,
+                RelativeWidth = 0.42,
+                RelativeHeight = 0.45,
+                Description = "Kaynak dikişleri balonlarla işaretlenir."
+            });
+
+            plan.Views.Add(new ViewPlan
+            {
+                Name = "Ön Görünüş",
+                Orientation = "Front",
+                RelativeX = 0.58,
+                RelativeY = 0.42,
+                RelativeWidth = 0.30,
+                RelativeHeight = 0.36,
+                Description = "Ana birleşim hatları ve kaynak sembolleri."
+            });
+
+            plan.Annotations.Add(new AnnotationPlan
+            {
+                Kind = "WeldTable",
+                Text = "Kaynak Tablosu: No | Birleşim | Proses | Boy | a (mm)",
+                Priority = 100
+            });
+
+            plan.Annotations.Add(new AnnotationPlan
+            {
+                Kind = "Note",
+                Text = "Kaynak: MAG (aksi belirtilmedikçe). Sıçrantı temizlenecek, çarpılma kontrol edilecek.",
+                Priority = 90
+            });
+
+            plan.Annotations.Add(new AnnotationPlan
+            {
+                Kind = "Note",
+                Text = $"Malzeme: {model.Material}. Kaynak sonrası çapak alma uygulanır.",
+                Priority = 80
+            });
+
+            FillTitleBlock(plan, model, request, "KAYNAK");
             return plan;
         }
 
@@ -512,6 +582,7 @@ namespace AutoGBT.Core.AI
             DrawingKind.Bend => "Büküm",
             DrawingKind.Cut => "Kesim",
             DrawingKind.Machining => "İşleme",
+            DrawingKind.Weld => "Kaynak",
             _ => kind.ToString()
         };
     }
