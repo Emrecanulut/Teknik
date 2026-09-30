@@ -172,7 +172,7 @@ function TechPaper({
   stepLabel: string
 }) {
   return (
-    <article className="paper" aria-label={step.title}>
+    <article className="paper" id="tech-paper" aria-label={step.title}>
       <header className="paper-head">
         <div>
           <p className="paper-kicker">AUTOGBT · TEKNİK RESİM KAĞIDI · {stepLabel}</p>
@@ -182,20 +182,57 @@ function TechPaper({
         <div className="paper-meta">
           <span>{paperLabel}</span>
           <span>Ölçek {step.scaleLabel}</span>
-          <span>Otomatik</span>
+          <span>Otomatik ölçeklendirme</span>
         </div>
       </header>
+
+      {step.kind === 'bend' && step.bend && (
+        <div className="bend-amount" aria-live="polite">
+          <div>
+            <span className="bend-amount-label">Bu adımda ne kadar bükülecek</span>
+            <p className="bend-amount-value">
+              {step.bend.angleDeg}°
+              <small>{step.bend.direction === 'UP' ? 'yukarı' : 'aşağı'}</small>
+            </p>
+          </div>
+          <ul>
+            <li>
+              Büküm noktası <strong>{step.bend.id}</strong>
+            </li>
+            <li>
+              Konum <strong>
+                {step.bend.xMm.toFixed(0)}, {step.bend.yMm.toFixed(0)} mm
+              </strong>
+            </li>
+            <li>
+              İç yarıçap <strong>R{step.bend.radiusMm}</strong>
+            </li>
+            <li>
+              Flanş <strong>{step.bend.flangeMm} mm</strong>
+            </li>
+            <li>
+              Büküm payı <strong>{step.bend.allowanceMm.toFixed(2)} mm</strong>
+            </li>
+          </ul>
+        </div>
+      )}
 
       <div className="paper-body">
         {step.kind === 'overview' && <FlatPatternSvg part={part} completedIds={[]} />}
         {step.kind === 'bend' && (
           <div className="paper-split">
-            <FlatPatternSvg
-              part={part}
-              highlightId={step.bend?.id}
-              completedIds={step.completedBendIds}
-            />
-            <BendDetailSvg step={step} thickness={part.thicknessMm} />
+            <div>
+              <p className="panel-caption">Açınımda büküm noktası</p>
+              <FlatPatternSvg
+                part={part}
+                highlightId={step.bend?.id}
+                completedIds={step.completedBendIds}
+              />
+            </div>
+            <div>
+              <p className="panel-caption">Profil detayı</p>
+              <BendDetailSvg step={step} thickness={part.thicknessMm} />
+            </div>
           </div>
         )}
         {step.kind === 'final' && <FinalFormSvg part={part} />}
@@ -203,7 +240,7 @@ function TechPaper({
 
       <div className="callout-row">
         {step.callouts.map((c) => (
-          <div key={c.label} className="callout">
+          <div key={c.label} className={`callout${c.label === 'Açı' ? ' emphasize' : ''}`}>
             <span>{c.label}</span>
             <strong>{c.value}</strong>
           </div>
@@ -298,6 +335,21 @@ export default function App() {
             </select>
           </label>
 
+          <div className="progress-block">
+            <div className="progress-top">
+              <span>İlerleme</span>
+              <span>
+                {stepIndex + 1}/{steps.length}
+              </span>
+            </div>
+            <div className="progress-track" aria-hidden="true">
+              <div
+                className="progress-fill"
+                style={{ width: `${((stepIndex + 1) / steps.length) * 100}%` }}
+              />
+            </div>
+          </div>
+
           <div className="step-rail">
             {steps.map((s, i) => (
               <button
@@ -314,7 +366,7 @@ export default function App() {
                   <small>
                     {s.kind === 'bend'
                       ? `${s.bend?.angleDeg}° · ${s.bend?.direction}`
-                      : s.scaleLabel}
+                      : `Ölçek ${s.scaleLabel}`}
                   </small>
                 </span>
               </button>
@@ -331,9 +383,17 @@ export default function App() {
               disabled={stepIndex >= steps.length - 1}
               onClick={() => go(1)}
             >
-              Sonraki adım
+              Sonraki kağıt
             </button>
           </div>
+
+          <button
+            type="button"
+            className="btn ghost wide print-btn"
+            onClick={() => window.print()}
+          >
+            Bu kağıdı yazdır
+          </button>
         </aside>
 
         <section className={`wizard-stage${anim ? ' show' : ''}`}>

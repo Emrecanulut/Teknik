@@ -1019,3 +1019,129 @@ main {
     padding-top: 0.5rem;
   }
 }
+
+.progress-block {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.progress-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+}
+
+.progress-track {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(232, 224, 208, 0.12);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #a67c00, var(--brass));
+  transition: width 280ms ease;
+}
+
+.bend-amount {
+  display: grid;
+  grid-template-columns: 1.1fr 1.4fr;
+  gap: 0.85rem;
+  border: 1.5px solid #1c221e;
+  padding: 0.85rem 1rem;
+  background: rgba(212, 160, 23, 0.12);
+}
+
+.bend-amount-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5a5346;
+}
+
+.bend-amount-value {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.8rem, 6vw, 3.8rem);
+  line-height: 0.95;
+  color: #1c221e;
+}
+
+.bend-amount-value small {
+  display: inline-block;
+  margin-left: 0.55rem;
+  font-size: 1rem;
+  color: #8a6400;
+  font-family: var(--font-body);
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.bend-amount ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+  align-content: center;
+}
+
+.panel-caption {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5a5346;
+}
+
+.callout.emphasize {
+  background: rgba(212, 160, 23, 0.18);
+  border-color: #a67c00;
+}
+
+.print-btn {
+  width: 100%;
+  border-radius: 0.65rem;
+}
+
+@media print {
+  body {
+    background: white !important;
+  }
+
+  .hero,
+  .wizard-side,
+  .nav {
+    display: none !important;
+  }
+
+  .wizard {
+    display: block;
+    padding: 0;
+  }
+
+  .wizard-stage,
+  .paper {
+    opacity: 1 !important;
+    transform: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    min-height: auto;
+  }
+
+  .paper {
+    break-inside: avoid;
+  }
+}
+
+@media (max-width: 720px) {
+  .bend-amount {
+    grid-template-columns: 1fr;
+  }
+}
