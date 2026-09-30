@@ -47,20 +47,24 @@ scripts/install-addin.bat
 
 ## Tek adım kurulum (Windows)
 
-Developer Command Prompt / PowerShell’de proje kökünde:
-
 ```bat
+git pull
 scripts\kur-hepsini.bat
 ```
 
-Bu script sırayla derler, masaüstü uygulamayı açar, isteğe bağlı SolidWorks
-eklentisini kurar ve web stüdyoyu başlatır.
+## Visual Studio ile çalıştırma (en kolay)
 
-Manuel yol:
+1. `AutoGBT.sln` dosyasını açın  
+2. Solution Explorer’da **AutoGBT.Desktop** → sağ tık → **Set as Startup Project**  
+3. Üstte yapılandırma: **Debug** + **Any CPU**  
+4. **F5** (Start)
+
+> Tüm solution’ı Build ederseniz SolidWorks’siz PC’de Addin/SolidWorks projeleri kırmızı kalabilir; sorun değil. Startup proje **Desktop** olsun.
+
+Takılırsa tanı raporu:
 
 ```bat
-scripts\build-windows.bat
-scripts\run-desktop.bat
+scripts\tani.bat
 ```
 
 Masaüstü uygulamada örnek parçalarla Büküm / Kesim / İşleme planlarını görebilir,
