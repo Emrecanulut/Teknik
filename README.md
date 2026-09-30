@@ -41,21 +41,25 @@ scripts/install-addin.bat
 - Visual Studio 2022 (Desktop development with .NET)
 - SolidWorks 2020+ (yalnızca eklenti / `.SLDDRW` için)
 
-## Hızlı başlangıç — Windows arayüzü
+## Tek adım kurulum (Windows)
 
-Developer Command Prompt / PowerShell:
+Developer Command Prompt / PowerShell’de proje kökünde:
+
+```bat
+scripts\kur-hepsini.bat
+```
+
+Bu script sırayla derler, masaüstü uygulamayı açar, isteğe bağlı SolidWorks
+eklentisini kurar ve web stüdyoyu başlatır.
+
+Manuel yol:
 
 ```bat
 scripts\build-windows.bat
+scripts\run-desktop.bat
 ```
 
-Masaüstü uygulamayı çalıştırın:
-
-```bat
-src\AutoGBT.Desktop\bin\x64\Release\net48\AutoGBT.Desktop.exe
-```
-
-Bu pencerede örnek parçalarla Büküm / Kesim / İşleme planlarını görebilir,
+Masaüstü uygulamada örnek parçalarla Büküm / Kesim / İşleme planlarını görebilir,
 raporları `%USERPROFILE%\Documents\AutoGBT\` altına yazabilirsiniz.
 
 ## SolidWorks eklentisi
