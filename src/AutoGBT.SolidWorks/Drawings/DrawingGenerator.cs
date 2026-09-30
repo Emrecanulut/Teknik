@@ -61,6 +61,7 @@ namespace AutoGBT.SolidWorks.Drawings
 
                 PlaceNotes(drawModel, plan);
                 UpdateTitleBlockNotes(drawModel, plan);
+                TryAutoDimension(drawModel, request);
 
                 drawModel.ForceRebuild3(true);
                 drawModel.SaveAs3(drawingPath, (int)swSaveAsVersion_e.swSaveAsCurrentVersion,
@@ -254,9 +255,34 @@ namespace AutoGBT.SolidWorks.Drawings
             try
             {
                 var block = string.Join("  |  ", plan.TitleBlockFields);
-                drawModel.InsertNote("AUTOGBT | " + plan.Title + Environment.NewLine + block);
+                drawModel.InsertNote(
+                    "AUTOGBT | " + plan.Title + Environment.NewLine + block + Environment.NewLine +
+                    "Düzen: Ön · Üst · Kesit A-A · İzometrik (A3 profesyonel şablon)");
             }
             catch { /* ignore */ }
+        }
+
+        private static void TryAutoDimension(ModelDoc2 drawModel, DrawingRequest request)
+        {
+            if (!request.AutoDimension) return;
+            try
+            {
+                // ModelDocExtension.InsertModelAnnotations3 — sürümler arası değişebilir.
+                var ext = drawModel.Extension;
+                ext?.InsertModelAnnotations3(
+                    (int)swImportModelItemsSource_e.swImportModelItemsFromEntireModel,
+                    (int)swInsertAnnotation_e.swInsertDimensionsMarkedForDrawing
+                    | (int)swInsertAnnotation_e.swInsertHoleWizardInfo,
+                    true, true, false, true);
+            }
+            catch
+            {
+                try
+                {
+                    drawModel.InsertNote("AutoGBT: Otomatik ölçü yerleştirme bu şablonda kısmen uygulanamadı — ölçüleri kontrol edin.");
+                }
+                catch { /* ignore */ }
+            }
         }
     }
 }

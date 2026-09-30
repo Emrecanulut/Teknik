@@ -1534,3 +1534,83 @@ main {
     display: block;
   }
 }
+
+/* Profesyonel A3 teknik resim */
+.prof-paper .prof-body {
+  padding: 0.4rem;
+  background: #ecece8;
+}
+
+.prof-sheet {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: #f7f7f5;
+  border: 1px solid #c8c8c2;
+}
+
+.prof-sheet .zone-label {
+  font-family: var(--font-mono);
+  font-size: 3.2px;
+  fill: #1a2744;
+}
+
+.prof-sheet .view-caption {
+  font-family: var(--font-mono);
+  font-size: 3.4px;
+  fill: #1a2744;
+  letter-spacing: 0.08em;
+}
+
+.prof-sheet .dim-text {
+  font-family: var(--font-mono);
+  font-size: 3.6px;
+  fill: #1a2744;
+}
+
+.prof-sheet .block-label {
+  font-family: var(--font-mono);
+  font-size: 3.2px;
+  fill: #445;
+}
+
+.prof-sheet .block-value {
+  font-family: var(--font-display);
+  font-size: 4.2px;
+  fill: #1a2744;
+  font-weight: 700;
+}
+
+.prof-sheet .note-text {
+  font-family: var(--font-mono);
+  font-size: 3.2px;
+  fill: #1a2744;
+}
+
+.prof-sheet .note-text.muted {
+  fill: #667;
+}
+
+.ref-compare {
+  border: 1px solid rgba(28, 34, 30, 0.25);
+  padding: 0.5rem 0.7rem;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.ref-compare summary {
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: #5a5346;
+}
+
+.ref-image {
+  width: 100%;
+  margin-top: 0.5rem;
+  border: 1px solid #bbb;
+  background: white;
+}
+
+.weld-under {
+  margin-top: 0.5rem;
+}

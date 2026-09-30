@@ -10,6 +10,8 @@ import {
   type ProcessKind,
 } from './assemblyEngine'
 import type { DrawingStep, SheetMetalPart } from './bendSteps'
+import { ProfessionalDrawingSvg } from './ProfessionalDrawingSvg'
+import { sheetFromDetectedPart } from './professionalSheet'
 import './App.css'
 
 type Phase = 'landing' | 'processing' | 'studio'
@@ -47,13 +49,28 @@ function JobPaper({
   job,
   part,
   bendStep,
+  showReference,
 }: {
   job: DrawingJob
   part: DetectedPart
   bendStep?: DrawingStep
+  showReference: boolean
 }) {
+  const useProfSheet =
+    job.process === 'machining' ||
+    job.process === 'weld' ||
+    (job.process === 'cut' && !part.sheet) ||
+    (job.process === 'bend' && bendStep?.kind === 'final')
+
+  const prof = sheetFromDetectedPart({
+    name: part.name,
+    material: part.material,
+    process: processLabel(job.process),
+    role: part.role,
+  })
+
   return (
-    <article className="paper job-paper" aria-label={job.title}>
+    <article className="paper job-paper prof-paper" aria-label={job.title}>
       <header className="paper-head">
         <div>
           <p className="paper-kicker">
@@ -95,14 +112,16 @@ function JobPaper({
         </div>
       )}
 
-      <div className="paper-body">
-        {part.sheet && (job.process === 'cut' || job.process === 'bend') && (
-          <FlatMini
-            sheet={part.sheet}
-            highlightId={bendStep?.bend?.id}
-          />
+      <div className={`paper-body${useProfSheet ? ' prof-body' : ''}`}>
+        {useProfSheet ? (
+          <ProfessionalDrawingSvg model={prof} />
+        ) : (
+          part.sheet &&
+          (job.process === 'cut' || job.process === 'bend') && (
+            <FlatMini sheet={part.sheet} highlightId={bendStep?.bend?.id} />
+          )
         )}
-        {job.process === 'weld' && (
+        {job.process === 'weld' && !useProfSheet && (
           <div className="weld-map">
             {part.welds.map((w) => (
               <div key={w.id} className="weld-card">
@@ -116,24 +135,32 @@ function JobPaper({
             ))}
           </div>
         )}
-        {job.process === 'machining' && (
-          <div className="machine-map">
-            <div className="iso-block" aria-hidden="true">
-              <span>Ön</span>
-              <span>Üst</span>
-              <span>Yan</span>
-              <span>İzo</span>
-            </div>
-            <ul>
-              {part.holes.map((h) => (
-                <li key={h.id}>
-                  {h.spec} × {h.count}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
       </div>
+
+      {job.process === 'weld' && (
+        <div className="weld-map weld-under">
+          {part.welds.map((w) => (
+            <div key={w.id} className="weld-card">
+              <strong>{w.id}</strong>
+              <span>{w.joint}</span>
+              <span>
+                {w.process} · L={w.lengthMm} · a={w.throatMm} · {w.sides} taraf
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showReference && job.process === 'machining' && (
+        <details className="ref-compare">
+          <summary>Referans örnek teknik resim (yüklediğiniz stil)</summary>
+          <img
+            src="/references/ornek_teknik_resim_01.png"
+            alt="Profesyonel teknik resim referansı"
+            className="ref-image"
+          />
+        </details>
+      )}
 
       <div className="callout-row">
         {(bendStep?.callouts ?? job.callouts).map((c) => (
@@ -433,7 +460,12 @@ export default function App() {
                         </div>
                       )}
 
-                      <JobPaper job={selectedJob} part={selectedPart} bendStep={bendStep} />
+                      <JobPaper
+                        job={selectedJob}
+                        part={selectedPart}
+                        bendStep={bendStep}
+                        showReference
+                      />
                     </>
                   )}
                 </>

@@ -348,37 +348,40 @@ namespace AutoGBT.Core.AI
                 Summary = BuildMachiningSummary(model)
             };
 
+            // Profesyonel A3 düzen (kullanıcı örneği): ön sol-üst, üst orta,
+            // kesit A-A sol-alt, gölgeli izometrik sağ-üst.
             plan.Views.Add(new ViewPlan
             {
                 Name = "Ön Görünüş",
                 Orientation = "Front",
-                RelativeX = 0.14,
-                RelativeY = 0.42,
-                RelativeWidth = 0.30,
-                RelativeHeight = 0.36,
-                Description = "Ana işleme yüzeyleri ve dış ölçüler."
+                RelativeX = 0.10,
+                RelativeY = 0.55,
+                RelativeWidth = 0.28,
+                RelativeHeight = 0.32,
+                Description = "Ana siluet + A-A kesit çizgisi."
             });
 
             plan.Views.Add(new ViewPlan
             {
                 Name = "Üst Görünüş",
                 Orientation = "Top",
-                RelativeX = 0.14,
-                RelativeY = 0.12,
-                RelativeWidth = 0.30,
-                RelativeHeight = 0.24,
-                Description = "Delik yerleşimleri ve cepler."
+                RelativeX = 0.40,
+                RelativeY = 0.52,
+                RelativeWidth = 0.28,
+                RelativeHeight = 0.34,
+                Description = "Delik / kama / flanş yerleşimi."
             });
 
             plan.Views.Add(new ViewPlan
             {
-                Name = "Yan Görünüş",
-                Orientation = "Right",
-                RelativeX = 0.48,
-                RelativeY = 0.42,
-                RelativeWidth = 0.22,
-                RelativeHeight = 0.36,
-                Description = "Derinlikler, basamaklar ve freze profilleri."
+                Name = "Kesit A-A",
+                Orientation = "Section",
+                IsSection = true,
+                RelativeX = 0.10,
+                RelativeY = 0.14,
+                RelativeWidth = 0.32,
+                RelativeHeight = 0.34,
+                Description = "İç çap basamakları, et kalınlığı, taralı kesit."
             });
 
             plan.Views.Add(new ViewPlan
@@ -386,27 +389,19 @@ namespace AutoGBT.Core.AI
                 Name = "İzometrik",
                 Orientation = "Isometric",
                 IsIsometric = true,
-                RelativeX = 0.74,
+                RelativeX = 0.70,
                 RelativeY = 0.55,
-                RelativeWidth = 0.20,
-                RelativeHeight = 0.28,
-                Description = "3B referans görünüş."
+                RelativeWidth = 0.24,
+                RelativeHeight = 0.32,
+                Description = "Gölgeli 3B referans (shaded with edges)."
             });
 
-            if (model.HoleCount > 2 || HasDeepFeatures(model))
+            plan.Annotations.Add(new AnnotationPlan
             {
-                plan.Views.Add(new ViewPlan
-                {
-                    Name = "Kesit A-A",
-                    Orientation = "Section",
-                    IsSection = true,
-                    RelativeX = 0.74,
-                    RelativeY = 0.18,
-                    RelativeWidth = 0.20,
-                    RelativeHeight = 0.26,
-                    Description = "İç boşluk / kademeli delik kesiti."
-                });
-            }
+                Kind = "Note",
+                Text = "Ölçüler milimetredir. Genel tolerans: ISO 2768-mK. Başlık bloğu + A3 çerçeve şablonu kullanın.",
+                Priority = 92
+            });
 
             if (request.IncludeHoleTable && model.HoleCount > 0)
             {
