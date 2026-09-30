@@ -6,11 +6,14 @@
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <Platforms>AnyCPU;x64</Platforms>
+    <SolidWorksApiPath Condition="'$(SolidWorksApiPath)' == ''">C:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\api\redist</SolidWorksApiPath>
   </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\AutoGBT.Core\AutoGBT.Core.csproj" />
   </ItemGroup>
-  <ItemGroup>
+
+  <ItemGroup Condition="Exists('$(SolidWorksApiPath)\SolidWorks.Interop.sldworks.dll')">
     <Reference Include="SolidWorks.Interop.sldworks">
       <HintPath>$(SolidWorksApiPath)\SolidWorks.Interop.sldworks.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
@@ -27,7 +30,9 @@
       <Private>False</Private>
     </Reference>
   </ItemGroup>
-  <PropertyGroup>
-    <SolidWorksApiPath Condition="'$(SolidWorksApiPath)' == ''">C:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\api\redist</SolidWorksApiPath>
-  </PropertyGroup>
+
+  <Target Name="RequireSolidWorksApi" BeforeTargets="CoreCompile"
+          Condition="!Exists('$(SolidWorksApiPath)\SolidWorks.Interop.sldworks.dll')">
+    <Error Text="SolidWorks API DLL bulunamadi: $(SolidWorksApiPath)\SolidWorks.Interop.sldworks.dll. Masaustu icin AutoGBT.Desktop projesini derleyin (F5). Eklenti icin SolidWorks kurulu olmali." />
+  </Target>
 </Project>

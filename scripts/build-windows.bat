@@ -6,23 +6,8 @@ call "%~dp0find-msbuild.bat"
 if "%MSBUILD%"=="" (
   echo.
   echo [HATA] MSBuild bulunamadi.
-  echo.
-  echo Bu bilgisayarda henuz derleyici yok. Sunlardan BIRINI kurun:
-  echo.
-  echo  A^) Visual Studio 2022 Community ^(onerilen^)
-  echo     https://visualstudio.microsoft.com/tr/downloads/
-  echo     Kurulumda workload: ".NET masaustu gelistirme" / ".NET desktop development"
-  echo.
-  echo  B^) Build Tools for Visual Studio 2022 ^(daha hafif^)
-  echo     https://visualstudio.microsoft.com/tr/downloads/#build-tools-for-visual-studio-2022
-  echo     Ayni workload: ".NET desktop development"
-  echo.
-  echo  C^) .NET Framework 4.8 Developer Pack
-  echo     https://dotnet.microsoft.com/download/dotnet-framework/net48
-  echo.
-  echo Kurulum bitince BU pencereyi kapatip scripts\kur-hepsini.bat dosyasini tekrar calistirin.
-  echo Developer Command Prompt acmaniza gerek yok; script MSBuild'i kendi bulur.
-  echo.
+  echo Visual Studio Installer -^> Modify -^> ".NET desktop development" isaretleyin.
+  echo Sonra scripts\tani.bat calistirip raporu paylasin.
   exit /b 1
 )
 
@@ -30,33 +15,45 @@ echo === AutoGBT Windows derleme ===
 echo MSBuild: %MSBUILD%
 echo.
 
+REM Prefer AnyCPU first (matches VS default toolbar "Any CPU")
+set "PLAT=AnyCPU"
 set "DESKTOP_OK=0"
 set "ADDIN_OK=0"
 
-echo [1/2] Core + UI + Desktop...
+echo [1/2] Desktop (Core + UI + WinForms)...
 if /I "%MSBUILD%"=="dotnet" (
-  dotnet build "src\AutoGBT.Desktop\AutoGBT.Desktop.csproj" -c Release -p:Platform=x64
+  dotnet build "src\AutoGBT.Desktop\AutoGBT.Desktop.csproj" -c Release -p:Platform=%PLAT%
 ) else (
-  "%MSBUILD%" "src\AutoGBT.Desktop\AutoGBT.Desktop.csproj" /p:Configuration=Release /p:Platform=x64 /restore /m /v:m
+  "%MSBUILD%" "src\AutoGBT.Desktop\AutoGBT.Desktop.csproj" /p:Configuration=Release /p:Platform=%PLAT% /restore /m /v:m
+)
+if errorlevel 1 (
+  echo AnyCPU basarisiz, x64 deneniyor...
+  set "PLAT=x64"
+  if /I "%MSBUILD%"=="dotnet" (
+    dotnet build "src\AutoGBT.Desktop\AutoGBT.Desktop.csproj" -c Release -p:Platform=x64
+  ) else (
+    "%MSBUILD%" "src\AutoGBT.Desktop\AutoGBT.Desktop.csproj" /p:Configuration=Release /p:Platform=x64 /restore /m /v:m
+  )
 )
 if errorlevel 1 (
   echo.
-  echo [HATA] Desktop derlenemedi.
-  echo .NET Framework 4.8 Developer Pack kurulu mu kontrol edin:
-  echo   https://dotnet.microsoft.com/download/dotnet-framework/net48
-  echo Visual Studio Installer -^> Modify -^> ".NET desktop development" isaretli olmali.
+  echo [HATA] Desktop derlenemedi. scripts\tani.bat calistirin ve raporu gonderin.
   exit /b 1
 )
 set "DESKTOP_OK=1"
-echo Desktop hazir.
+
+for %%E in (
+  "src\AutoGBT.Desktop\bin\Release\net48\AutoGBT.Desktop.exe"
+  "src\AutoGBT.Desktop\bin\x64\Release\net48\AutoGBT.Desktop.exe"
+  "src\AutoGBT.Desktop\bin\AnyCPU\Release\net48\AutoGBT.Desktop.exe"
+) do if exist "%%~E" set "DESKTOP_EXE=%%~fE"
+
+echo Desktop OK: %DESKTOP_EXE%
 
 set "SWAPI=C:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\api\redist"
 if not exist "%SWAPI%\SolidWorks.Interop.sldworks.dll" (
   echo.
-  echo [2/2] SolidWorks API bulunamadi — eklenti atlandi.
-  echo Masaustu uygulama yine de kullanilabilir.
-  echo SolidWorks kuruluysa API yolu:
-  echo   %SWAPI%
+  echo [2/2] SolidWorks API yok — eklenti atlandi. Desktop kullanabilirsiniz.
   goto :summary
 )
 
@@ -67,28 +64,15 @@ if /I "%MSBUILD%"=="dotnet" (
 ) else (
   "%MSBUILD%" "src\AutoGBT.Addin\AutoGBT.Addin.csproj" /p:Configuration=Release /p:Platform=x64 /restore /m /v:m
 )
-if errorlevel 1 (
-  echo Eklenti derlenemedi; Desktop yine kullanilabilir.
-  goto :summary
-)
-set "ADDIN_OK=1"
-echo Eklenti hazir. Kurulum: scripts\install-addin.bat ^(yonetici^)
+if not errorlevel 1 set "ADDIN_OK=1"
 
 :summary
 echo.
 echo === Ozet ===
-if "%DESKTOP_OK%"=="1" (
-  echo  Desktop: OK
-  echo    %cd%\src\AutoGBT.Desktop\bin\x64\Release\net48\AutoGBT.Desktop.exe
-) else (
-  echo  Desktop: BASARISIZ
-)
-if "%ADDIN_OK%"=="1" (
-  echo  Add-in:  OK
-) else (
-  echo  Add-in:  atlandi / basarisiz
-)
+echo  Desktop: OK
+if defined DESKTOP_EXE echo    %DESKTOP_EXE%
+if "%ADDIN_OK%"=="1" (echo  Add-in: OK) else (echo  Add-in: atlandi)
 echo.
-if "%DESKTOP_OK%"=="1" exit /b 0
-exit /b 1
+echo Visual Studio'da: Solution Explorer -^> AutoGBT.Desktop -^> sag tik -^> Set as Startup Project -^> F5
+exit /b 0
 endlocal

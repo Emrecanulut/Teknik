@@ -8,13 +8,15 @@
     <Platforms>AnyCPU;x64</Platforms>
     <RegisterForComInterop>false</RegisterForComInterop>
     <UseWindowsForms>true</UseWindowsForms>
+    <SolidWorksApiPath Condition="'$(SolidWorksApiPath)' == ''">C:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\api\redist</SolidWorksApiPath>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\AutoGBT.Core\AutoGBT.Core.csproj" />
-    <ProjectReference Include="..\AutoGBT.SolidWorks\AutoGBT.SolidWorks.csproj" />
     <ProjectReference Include="..\AutoGBT.UI\AutoGBT.UI.csproj" />
+    <ProjectReference Include="..\AutoGBT.SolidWorks\AutoGBT.SolidWorks.csproj"
+                      Condition="Exists('$(SolidWorksApiPath)\SolidWorks.Interop.sldworks.dll')" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="Exists('$(SolidWorksApiPath)\SolidWorks.Interop.sldworks.dll')">
     <Reference Include="SolidWorks.Interop.sldworks">
       <HintPath>$(SolidWorksApiPath)\SolidWorks.Interop.sldworks.dll</HintPath>
       <EmbedInteropTypes>False</EmbedInteropTypes>
@@ -30,10 +32,13 @@
       <EmbedInteropTypes>False</EmbedInteropTypes>
       <Private>False</Private>
     </Reference>
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Drawing" />
   </ItemGroup>
-  <PropertyGroup>
-    <SolidWorksApiPath Condition="'$(SolidWorksApiPath)' == ''">C:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\api\redist</SolidWorksApiPath>
-  </PropertyGroup>
+  <Target Name="RequireSolidWorksApi" BeforeTargets="CoreCompile"
+          Condition="!Exists('$(SolidWorksApiPath)\SolidWorks.Interop.sldworks.dll')">
+    <Error Text="SolidWorks API yok — Addin atlanmali. Solution Explorer'da AutoGBT.Desktop'a sag tik - Set as Startup Project, sonra F5." />
+  </Target>
 </Project>
