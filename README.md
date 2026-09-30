@@ -1,107 +1,88 @@
-# AutoGBT — SolidWorks Teknik Resim Eklentisi
+# AutoGBT — Windows SolidWorks Teknik Resim Eklentisi
 
-Katı modellerinizden **büküm**, **kesim (açınım)** ve **işleme** teknik resimlerini
-otomatik üreten bir SolidWorks eklentisi. İçindeki **AutoGBT** asistanı modeli
-analiz eder; görünüş yerleşimi, büküm/delik tabloları, tolerans ve üretim
-notlarını planlayıp SolidWorks çizimine aktarır.
+Windows üzerinde çalışan **WinForms** arayüzlü SolidWorks eklentisi.
+**AutoGBT** asistanı katı modellerinizden **büküm**, **kesim (açınım)** ve **işleme**
+teknik resimlerini planlar ve SolidWorks çizimine aktarır.
 
-## Ne yapar?
+## Windows’ta iki yüzey
 
-| Komut | Çıktı |
+| Uygulama | Ne işe yarar |
 | --- | --- |
-| **AutoGBT Analiz** | Malzeme, sac kalınlığı, büküm/delik sayısı, önerilen resim türleri |
-| **Büküm Resmi** | İzometrik + ön/yan görünüş, büküm detayı, büküm tablosu |
-| **Kesim Resmi** | Flat pattern açınım, büküm çizgileri, delik tablosu, izometrik referans |
-| **İşleme Resmi** | Ön/üst/yan/izometrik (+ kesit), delik tablosu, yüzey ve ISO 2768 notları |
-| **AutoGBT Paneli** | SolidWorks görev panelinden seçenekli üretim |
+| **AutoGBT.Desktop.exe** | Saf Windows WinForms arayüzü — SolidWorks olmadan plan/önizleme |
+| **AutoGBT.Addin** (SolidWorks) | Aynı WinForms paneli görev panelinde + gerçek `.SLDDRW` üretimi |
 
 ## Depo yapısı
 
 ```
-AutoGBT.sln                 SolidWorks eklenti çözümü (.NET Framework 4.8)
-src/AutoGBT.Core/           Analiz, AutoGBT planlayıcı, Drawing API üretimi
-src/AutoGBT.Addin/          COM eklenti, komut çubuğu, görev paneli
-scripts/                    install-addin.bat / uninstall-addin.bat
-demo/                       AutoGBT stüdyosu (tarayıcı önizlemesi)
+AutoGBT.sln
+src/AutoGBT.Core/         Modeller + AutoGBT planlayıcı
+src/AutoGBT.UI/           Ortak Windows WinForms paneli
+src/AutoGBT.Desktop/      Bağımsız Windows uygulaması (.exe)
+src/AutoGBT.SolidWorks/   SolidWorks API (analiz + çizim)
+src/AutoGBT.Addin/        COM eklenti + görev paneli host
+scripts/build-windows.bat
+scripts/install-addin.bat
 ```
 
-## SolidWorks kurulumu (Windows)
+## Gereksinimler (Windows)
 
-Gereksinimler:
-
-- SolidWorks 2020+ (x64)
+- Windows 10/11 x64
+- [.NET Framework 4.8](https://dotnet.microsoft.com/download/dotnet-framework/net48)
 - Visual Studio 2022 (Desktop development with .NET)
-- SolidWorks API redistributable (`SolidWorks.Interop.*.dll`)
+- SolidWorks 2020+ (yalnızca eklenti / `.SLDDRW` için)
 
-Derleme:
+## Hızlı başlangıç — Windows arayüzü
+
+Developer Command Prompt / PowerShell:
 
 ```bat
-msbuild AutoGBT.sln /p:Configuration=Release /p:Platform=x64
+scripts\build-windows.bat
 ```
 
-API DLL yolu varsayılan:
+Masaüstü uygulamayı çalıştırın:
+
+```bat
+src\AutoGBT.Desktop\bin\x64\Release\net48\AutoGBT.Desktop.exe
+```
+
+Bu pencerede örnek parçalarla Büküm / Kesim / İşleme planlarını görebilir,
+raporları `%USERPROFILE%\Documents\AutoGBT\` altına yazabilirsiniz.
+
+## SolidWorks eklentisi
+
+1. `scripts\build-windows.bat` (SolidWorks API DLL’leri kurulu olmalı)
+2. Yönetici olarak `scripts\install-addin.bat`
+3. SolidWorks → **Tools → Add-ins** → **AutoGBT Teknik Resim**
+4. Parçayı kaydedin → komut çubuğu veya sağdaki **AutoGBT** görev paneli
+
+API yolu varsayılan:
 
 `C:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\api\redist`
 
-Farklıysa:
-
 ```bat
-msbuild AutoGBT.sln /p:Configuration=Release /p:Platform=x64 ^
+msbuild src\AutoGBT.Addin\AutoGBT.Addin.csproj /p:Configuration=Release /p:Platform=x64 ^
   /p:SolidWorksApiPath="D:\SOLIDWORKS\api\redist"
 ```
 
-Kurulum (yönetici):
+Kaldırma: `scripts\uninstall-addin.bat`
 
-```bat
-scripts\install-addin.bat
-```
+## Arayüz özellikleri
 
-SolidWorks → **Tools → Add-ins** → **AutoGBT Teknik Resim** işaretleyin.
+- Model analizi (malzeme, sac, büküm, delik)
+- Teknik resim türü seçimi: Büküm / Kesim / İşleme
+- Sayfa formatı, büküm/delik tablosu, tolerans, yüzey notları
+- AutoGBT ek talimat alanı
+- Sağ panelde teknik resim yerleşim önizlemesi (Windows çizimi)
+- SolidWorks’te tek tıkla `.SLDDRW` oluşturma
 
-Kaldırma:
-
-```bat
-scripts\uninstall-addin.bat
-```
-
-### Kullanım
-
-1. Parça veya montajı açın ve **kaydedin** (görünüşler dosya yoluna ihtiyaç duyar).
-2. Komut çubuğundan **Büküm / Kesim / İşleme** seçin veya görev panelini açın.
-3. AutoGBT `.SLDDRW` dosyasını parça klasörüne yazar (`_Buküm`, `_Kesim`, `_Isleme`).
-
-İsteğe bağlı ortam değişkenleri:
+## İsteğe bağlı ortam değişkenleri
 
 | Değişken | Açıklama |
 | --- | --- |
 | `AUTOGBT_DRAWING_TEMPLATE` | Özel `.drwdot` şablon yolu |
-| `AUTOGBT_API_KEY` | İleride bulut LLM bağlamak için (şu an kural tabanlı motor yeterli) |
-| `AUTOGBT_API_BASE` | Özel API taban URL |
+| `AUTOGBT_API_KEY` | İleride bulut LLM (şu an kural tabanlı motor) |
 
-## Demo stüdyosu (tarayıcı)
+## Not
 
-SolidWorks olmadan AutoGBT planlayıcısını denemek için:
-
-```bash
-cd demo
-npm install
-npm run dev
-```
-
-Varsayılan adres: [http://127.0.0.1:43147](http://127.0.0.1:43147)
-
-Demo örnek parçalar üzerinden büküm / kesim / işleme planlarını ve sanal teknik
-resim yerleşimini gösterir. Gerçek `.SLDDRW` üretimi yalnızca SolidWorks
-eklentisinde yapılır.
-
-## AutoGBT nasıl planlar?
-
-1. Feature ağacından sac metal, büküm, delik ve sınır kutusu okunur.
-2. Seçilen resim türüne göre görünüşler, tablolar ve notlar üretilir.
-3. Ölçek parça boyutuna göre önerilir; kalite uyarıları rapora eklenir.
-4. SolidWorks Drawing API ile görünüşler ve notlar çizime yerleştirilir.
-
-## Lisans
-
-Bu proje örnek / başlangıç eklentisidir; kendi üretim şablonlarınıza göre
-özelleştirin.
+Bu ortam Linux bulut ajanıdır; WinForms `.exe` yalnızca Windows’ta açılır.
+Kaynak kod Windows hedefidir (`net48` + WinForms).

@@ -6,7 +6,7 @@ using AutoGBT.Core.Models;
 using SolidWorks.Interop.sldworks;
 using SolidWorks.Interop.swconst;
 
-namespace AutoGBT.Core.Analysis
+namespace AutoGBT.SolidWorks.Analysis
 {
     /// <summary>
     /// Aktif katı modeli okuyup AutoGBT için özet üretir.

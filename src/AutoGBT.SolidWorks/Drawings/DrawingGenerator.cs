@@ -5,7 +5,7 @@ using AutoGBT.Core.Models;
 using SolidWorks.Interop.sldworks;
 using SolidWorks.Interop.swconst;
 
-namespace AutoGBT.Core.Drawings
+namespace AutoGBT.SolidWorks.Drawings
 {
     /// <summary>
     /// AutoGBT planını SolidWorks Drawing belgesine dönüştürür.

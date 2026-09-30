@@ -1,5 +1,9 @@
 using System;
 using System.Runtime.InteropServices;
+using AutoGBT.Core.AI;
+using AutoGBT.Core.Models;
+using AutoGBT.SolidWorks;
+using AutoGBT.SolidWorks.Analysis;
 using SolidWorks.Interop.sldworks;
 using SolidWorks.Interop.swpublished;
 using SolidWorks.Interop.swconst;
@@ -7,7 +11,7 @@ using SolidWorks.Interop.swconst;
 namespace AutoGBT.Addin
 {
     /// <summary>
-    /// SolidWorks COM eklenti giriş noktası — AutoGBT teknik resim asistanı.
+    /// SolidWorks COM eklenti giriş noktası — AutoGBT Windows / SolidWorks arayüzü.
     /// </summary>
     [ComVisible(true)]
     [Guid("8F3C2A91-6B4E-4D7A-9C11-A7E5D2B8F401")]
@@ -23,10 +27,10 @@ namespace AutoGBT.Addin
         private int _addinCookie;
         private CommandManagerHost? _commands;
         private TaskPaneHost? _taskPane;
-        private Core.AutoGbtService? _service;
+        private AutoGbtService? _service;
 
         public ISldWorks? App => _swApp;
-        public Core.AutoGbtService? Service => _service;
+        public AutoGbtService? Service => _service;
         public int Cookie => _addinCookie;
 
         #region ISwAddin
@@ -37,7 +41,7 @@ namespace AutoGBT.Addin
             _addinCookie = Cookie;
             _swApp.SetAddinCallbackInfo2(0, this, Cookie);
 
-            _service = new Core.AutoGbtService(_swApp);
+            _service = new AutoGbtService(_swApp);
             _commands = new CommandManagerHost(this);
             _commands.Create();
 
@@ -45,7 +49,7 @@ namespace AutoGBT.Addin
             _taskPane.Create();
 
             _swApp.SendMsgToUser2(
-                "AutoGBT yüklendi. Komut çubuğundan Büküm / Kesim / İşleme resmi oluşturabilir veya görev panelini açabilirsiniz.",
+                "AutoGBT yüklendi. Windows görev panelinden veya komut çubuğundan Büküm / Kesim / İşleme resmi oluşturabilirsiniz.",
                 (int)swMessageBoxIcon_e.swMbInformation,
                 (int)swMessageBoxBtn_e.swMbOk);
 
@@ -81,29 +85,17 @@ namespace AutoGBT.Addin
 
         public void OnCreateBend()
         {
-            RunSafe(() =>
-            {
-                var result = _service!.CreateBendDrawing();
-                ShowResult(result);
-            });
+            RunSafe(() => ShowResult(_service!.CreateBendDrawing()));
         }
 
         public void OnCreateCut()
         {
-            RunSafe(() =>
-            {
-                var result = _service!.CreateCutDrawing();
-                ShowResult(result);
-            });
+            RunSafe(() => ShowResult(_service!.CreateCutDrawing()));
         }
 
         public void OnCreateMachining()
         {
-            RunSafe(() =>
-            {
-                var result = _service!.CreateMachiningDrawing();
-                ShowResult(result);
-            });
+            RunSafe(() => ShowResult(_service!.CreateMachiningDrawing()));
         }
 
         public void OnOpenTaskPane()
@@ -119,9 +111,9 @@ namespace AutoGBT.Addin
                 var kinds = _service.Assistant.RecommendKinds(model);
                 var msg =
                     "AutoGBT Model Analizi\n\n" +
-                    Core.Analysis.ModelAnalyzer.FormatSummary(model) +
+                    ModelAnalyzer.FormatSummary(model) +
                     "\n\nÖnerilen resimler:\n- " +
-                    string.Join("\n- ", System.Linq.Enumerable.Select(kinds, Core.AI.AutoGbtAssistant.ToTurkish));
+                    string.Join("\n- ", System.Linq.Enumerable.Select(kinds, AutoGbtAssistant.ToTurkish));
                 _swApp!.SendMsgToUser2(msg,
                     (int)swMessageBoxIcon_e.swMbInformation,
                     (int)swMessageBoxBtn_e.swMbOk);
@@ -130,7 +122,6 @@ namespace AutoGBT.Addin
 
         public int OnEnable()
         {
-            // 1 = etkin
             try
             {
                 var doc = _swApp?.ActiveDoc as ModelDoc2;
@@ -162,7 +153,7 @@ namespace AutoGBT.Addin
             }
         }
 
-        private void ShowResult(Core.Models.DrawingResult result)
+        private void ShowResult(DrawingResult result)
         {
             var icon = result.Success
                 ? swMessageBoxIcon_e.swMbInformation

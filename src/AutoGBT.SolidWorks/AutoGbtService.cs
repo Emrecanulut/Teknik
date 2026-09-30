@@ -1,13 +1,14 @@
 using System;
 using AutoGBT.Core.AI;
-using AutoGBT.Core.Analysis;
 using AutoGBT.Core.Models;
+using AutoGBT.SolidWorks.Analysis;
+using AutoGBT.SolidWorks.Drawings;
 using SolidWorks.Interop.sldworks;
 
-namespace AutoGBT.Core
+namespace AutoGBT.SolidWorks
 {
     /// <summary>
-    /// Eklenti komutlarının kullandığı tek giriş noktası.
+    /// SolidWorks oturumuna bağlı AutoGBT servisi.
     /// </summary>
     public sealed class AutoGbtService
     {

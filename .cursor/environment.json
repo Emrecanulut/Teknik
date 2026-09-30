@@ -1,9 +1,8 @@
-# AutoGBT SolidWorks Add-in — Windows ortamı için örnek yapılandırma
-# Gerçek kurulumda SolidWorksApiPath'i kendi kurulumunuza göre düzenleyin.
+# AutoGBT — Windows SolidWorks ortamı
 
 install: |
-  echo "SolidWorks eklentisi Windows + Visual Studio gerektirir."
-  echo "Demo stüdyosu için: cd demo && npm install"
+  echo "Windows hedefi: Visual Studio 2022 + .NET Framework 4.8 + SolidWorks API"
+  echo "Bulutta yalnizca kaynak ve web demo dogrulanir."
 
 start: |
   cd demo && npm run dev
