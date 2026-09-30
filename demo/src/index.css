@@ -1,0 +1,55 @@
+:root {
+  --bg: #0e1412;
+  --bg-elevated: #161e1b;
+  --ink: #e8e0d0;
+  --ink-muted: #9a9488;
+  --brass: #d4a017;
+  --brass-hot: #f0c14a;
+  --steel: #3d5248;
+  --paper: #e6dcc8;
+  --paper-line: #b7aa92;
+  --danger: #c45c3e;
+  --ok: #6a9a6a;
+  --font-display: "Syne", sans-serif;
+  --font-body: "Manrope", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  background:
+    radial-gradient(1200px 700px at 10% -10%, rgba(212, 160, 23, 0.16), transparent 55%),
+    radial-gradient(900px 600px at 100% 0%, rgba(61, 82, 72, 0.45), transparent 50%),
+    linear-gradient(165deg, #121a17 0%, var(--bg) 42%, #0a100e 100%);
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+}

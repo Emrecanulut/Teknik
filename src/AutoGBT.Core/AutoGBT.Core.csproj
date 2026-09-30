@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <RootNamespace>AutoGBT.Core</RootNamespace>
+    <AssemblyName>AutoGBT.Core</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <Platforms>AnyCPU;x64</Platforms>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="SolidWorks.Interop.sldworks">
+      <HintPath>$(SolidWorksApiPath)\SolidWorks.Interop.sldworks.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="SolidWorks.Interop.swconst">
+      <HintPath>$(SolidWorksApiPath)\SolidWorks.Interop.swconst.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="SolidWorks.Interop.swpublished">
+      <HintPath>$(SolidWorksApiPath)\SolidWorks.Interop.swpublished.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+  <PropertyGroup>
+    <SolidWorksApiPath Condition="'$(SolidWorksApiPath)' == ''">C:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\api\redist</SolidWorksApiPath>
+  </PropertyGroup>
+</Project>

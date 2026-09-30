@@ -1,0 +1,9 @@
+# AutoGBT SolidWorks Add-in — Windows ortamı için örnek yapılandırma
+# Gerçek kurulumda SolidWorksApiPath'i kendi kurulumunuza göre düzenleyin.
+
+install: |
+  echo "SolidWorks eklentisi Windows + Visual Studio gerektirir."
+  echo "Demo stüdyosu için: cd demo && npm install"
+
+start: |
+  cd demo && npm run dev

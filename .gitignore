@@ -1,0 +1,23 @@
+# Build
+bin/
+obj/
+*.user
+*.suo
+*.cache
+[Dd]ebug/
+[Rr]elease/
+
+# Node
+node_modules/
+demo/dist/
+npm-debug.log*
+.DS_Store
+
+# IDE
+.vs/
+.idea/
+*.swp
+
+# Secrets
+.env
+.env.local
