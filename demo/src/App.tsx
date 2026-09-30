@@ -11,6 +11,7 @@ import {
 } from './assemblyEngine'
 import type { DrawingStep, SheetMetalPart } from './bendSteps'
 import { ProfessionalDrawingSvg } from './ProfessionalDrawingSvg'
+import { LatheProfessionalSvg, LATHE_SAMPLE } from './LatheProfessionalSvg'
 import { sheetFromDetectedPart } from './professionalSheet'
 import './App.css'
 
@@ -56,8 +57,8 @@ function JobPaper({
   bendStep?: DrawingStep
   showReference: boolean
 }) {
+  const useLatheSheet = job.process === 'machining'
   const useProfSheet =
-    job.process === 'machining' ||
     job.process === 'weld' ||
     (job.process === 'cut' && !part.sheet) ||
     (job.process === 'bend' && bendStep?.kind === 'final')
@@ -77,11 +78,17 @@ function JobPaper({
             AUTOGBT · {processLabel(job.process).toUpperCase()} · {part.fileName}
           </p>
           <h3>{bendStep ? bendStep.title : job.title}</h3>
-          <p className="paper-sub">{bendStep ? bendStep.subtitle : job.summary}</p>
+          <p className="paper-sub">
+            {bendStep
+              ? bendStep.subtitle
+              : useLatheSheet
+                ? 'Ölçülü profesyonel teknik resim — ana profil · yan · kesit A-A · detay C'
+                : job.summary}
+          </p>
         </div>
         <div className="paper-meta">
           <span>Adet ×{part.quantity}</span>
-          <span>Ölçek {bendStep?.scaleLabel ?? job.scaleLabel}</span>
+          <span>Ölçek {bendStep?.scaleLabel ?? (useLatheSheet ? '2:1' : job.scaleLabel)}</span>
           <span>Güven %{Math.round(part.confidence * 100)}</span>
         </div>
       </header>
@@ -112,28 +119,23 @@ function JobPaper({
         </div>
       )}
 
-      <div className={`paper-body${useProfSheet ? ' prof-body' : ''}`}>
-        {useProfSheet ? (
+      <div className={`paper-body${useLatheSheet || useProfSheet ? ' prof-body' : ''}`}>
+        {useLatheSheet ? (
+          <LatheProfessionalSvg
+            model={{
+              ...LATHE_SAMPLE,
+              partName: part.name,
+              material: part.material,
+              drawingNo: `AGBT-${part.id.slice(-4).toUpperCase()}`,
+            }}
+          />
+        ) : useProfSheet ? (
           <ProfessionalDrawingSvg model={prof} />
         ) : (
           part.sheet &&
           (job.process === 'cut' || job.process === 'bend') && (
             <FlatMini sheet={part.sheet} highlightId={bendStep?.bend?.id} />
           )
-        )}
-        {job.process === 'weld' && !useProfSheet && (
-          <div className="weld-map">
-            {part.welds.map((w) => (
-              <div key={w.id} className="weld-card">
-                <strong>{w.id}</strong>
-                <span>{w.joint}</span>
-                <span>
-                  {w.process} · L={w.lengthMm} · a={w.throatMm} · {w.sides} taraf
-                </span>
-                <em>{w.note}</em>
-              </div>
-            ))}
-          </div>
         )}
       </div>
 
@@ -152,11 +154,11 @@ function JobPaper({
       )}
 
       {showReference && job.process === 'machining' && (
-        <details className="ref-compare">
-          <summary>Referans örnek teknik resim (yüklediğiniz stil)</summary>
+        <details className="ref-compare" open>
+          <summary>Referans: paylaştığınız torna teknik resmi</summary>
           <img
-            src="/references/ornek_teknik_resim_01.png"
-            alt="Profesyonel teknik resim referansı"
+            src="/references/ornek_teknik_resim_02_lathe.png"
+            alt="Torna teknik resim referansı"
             className="ref-image"
           />
         </details>

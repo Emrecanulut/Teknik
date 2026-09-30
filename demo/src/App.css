@@ -1614,3 +1614,14 @@ main {
 .weld-under {
   margin-top: 0.5rem;
 }
+
+.prof-sheet .balloon {
+  font-family: var(--font-mono);
+  font-size: 3.4px;
+  fill: #1a5cff;
+  font-weight: 700;
+}
+
+.lathe-sheet {
+  min-height: 360px;
+}

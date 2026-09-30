@@ -348,28 +348,28 @@ namespace AutoGBT.Core.AI
                 Summary = BuildMachiningSummary(model)
             };
 
-            // Profesyonel A3 düzen (kullanıcı örneği): ön sol-üst, üst orta,
-            // kesit A-A sol-alt, gölgeli izometrik sağ-üst.
+            // Torna/işleme örneği düzeni: ana profil (sol-üst), yan/uç (sağ-üst),
+            // kesit A-A (sol-alt), detay C (sağ-orta), izometrik opsiyonel.
             plan.Views.Add(new ViewPlan
             {
-                Name = "Ön Görünüş",
+                Name = "Ana Profil",
                 Orientation = "Front",
-                RelativeX = 0.10,
-                RelativeY = 0.55,
-                RelativeWidth = 0.28,
-                RelativeHeight = 0.32,
-                Description = "Ana siluet + A-A kesit çizgisi."
+                RelativeX = 0.28,
+                RelativeY = 0.58,
+                RelativeWidth = 0.42,
+                RelativeHeight = 0.28,
+                Description = "Ana torna profili — çaplar, boylar, pahlalar, GD&T."
             });
 
             plan.Views.Add(new ViewPlan
             {
-                Name = "Üst Görünüş",
-                Orientation = "Top",
-                RelativeX = 0.40,
-                RelativeY = 0.52,
-                RelativeWidth = 0.28,
-                RelativeHeight = 0.34,
-                Description = "Delik / kama / flanş yerleşimi."
+                Name = "Yan / Uç Görünüş",
+                Orientation = "Right",
+                RelativeX = 0.78,
+                RelativeY = 0.62,
+                RelativeWidth = 0.16,
+                RelativeHeight = 0.22,
+                Description = "Flanş delik çevrimi ve eşmerkezli çaplar."
             });
 
             plan.Views.Add(new ViewPlan
@@ -377,29 +377,43 @@ namespace AutoGBT.Core.AI
                 Name = "Kesit A-A",
                 Orientation = "Section",
                 IsSection = true,
-                RelativeX = 0.10,
-                RelativeY = 0.14,
-                RelativeWidth = 0.32,
-                RelativeHeight = 0.34,
-                Description = "İç çap basamakları, et kalınlığı, taralı kesit."
+                RelativeX = 0.28,
+                RelativeY = 0.18,
+                RelativeWidth = 0.40,
+                RelativeHeight = 0.28,
+                Description = "İç diş / kademeli delik / taralı kesit (ölçek 1:1)."
             });
 
             plan.Views.Add(new ViewPlan
             {
-                Name = "İzometrik",
-                Orientation = "Isometric",
-                IsIsometric = true,
-                RelativeX = 0.70,
-                RelativeY = 0.55,
-                RelativeWidth = 0.24,
-                RelativeHeight = 0.32,
-                Description = "Gölgeli 3B referans (shaded with edges)."
+                Name = "Detay C",
+                Orientation = "Detail",
+                IsDetail = true,
+                RelativeX = 0.78,
+                RelativeY = 0.28,
+                RelativeWidth = 0.16,
+                RelativeHeight = 0.18,
+                Description = "Kanal / undercut detayı (ör. DIN 509) — büyütülmüş ölçek."
+            });
+
+            plan.Annotations.Add(new AnnotationPlan
+            {
+                Kind = "Finish",
+                Text = "Yüzey: Ra 3.2 µm (genel). Çapak al / kenar 0.1–0.3 mm kır.",
+                Priority = 96
+            });
+
+            plan.Annotations.Add(new AnnotationPlan
+            {
+                Kind = "GD&T",
+                Text = "Genel tolerans: DIN ISO 2768-m. İşaretli çaplar H7 vb. modele göre.",
+                Priority = 94
             });
 
             plan.Annotations.Add(new AnnotationPlan
             {
                 Kind = "Note",
-                Text = "Ölçüler milimetredir. Genel tolerans: ISO 2768-mK. Başlık bloğu + A3 çerçeve şablonu kullanın.",
+                Text = "Ölçüler milimetredir. Çizik/ezik kabul edilmez. Balon numaraları muayene içindir.",
                 Priority = 92
             });
 

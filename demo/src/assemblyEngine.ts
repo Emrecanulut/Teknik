@@ -136,12 +136,12 @@ function classifyFromFileName(fileName: string): {
       confidence: 0.88,
     }
   }
-  if (/(blok|block|housing|adapter|cnc|miller|torna|islem|işlem)/.test(n)) {
+  if (/(blok|block|housing|adapter|cnc|miller|torna|lathe|shaft|mil|islem|işlem|hub)/.test(n)) {
     return {
       role: 'machined',
       processes: ['machining'],
-      material: 'Al7075-T6',
-      confidence: 0.87,
+      material: /lathe|stainless|inox|çelik|celik/.test(n) ? 'Stainless Steel' : 'Al7075-T6',
+      confidence: 0.9,
     }
   }
   if (/(motor|sensor|rulman|bearing|silindir)/.test(n)) {
@@ -327,13 +327,32 @@ export const SAMPLE_ASSEMBLY_PARTS: DetectedPart[] = [
     material: 'C45',
     role: 'machined',
     confidence: 0.97,
-    description: 'Kama kanallı flanşlı göbek — profesyonel işleme resmi (ön/üst/kesit/izometrik).',
+    description: 'Kama kanallı flanşlı göbek — profesyonel işleme resmi.',
     box: { x: 81, y: 81, z: 87 },
     welds: [],
     holes: [
       { id: 'H1', spec: 'Ø10', count: 2 },
       { id: 'H2', spec: 'Ø33.2', count: 1 },
       { id: 'H3', spec: 'kama 8', count: 1 },
+    ],
+    processes: ['machining'],
+    source: 'sample',
+  },
+  {
+    id: 'p-lathe',
+    name: 'xometry_lathe_sample_v2.0',
+    fileName: 'xometry_lathe_sample_v2.0.SLDPRT',
+    quantity: 1,
+    material: 'Stainless Steel',
+    role: 'machined',
+    confidence: 0.98,
+    description: 'Torna parçası — ölçülü teknik resim (profil, yan, kesit A-A, detay C, balonlar).',
+    box: { x: 76, y: 40, z: 40 },
+    welds: [],
+    holes: [
+      { id: 'H1', spec: 'Ø10 H7', count: 1 },
+      { id: 'H2', spec: 'Ø3×4', count: 4 },
+      { id: 'H3', spec: 'M4', count: 2 },
     ],
     processes: ['machining'],
     source: 'sample',
